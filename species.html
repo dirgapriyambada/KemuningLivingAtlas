@@ -115,13 +115,13 @@
             <div class="taxa-cards-container">
                 <div class="taxa-card" data-taxa="Mamalia">
                     <img src="assets/icon_mammals.png" alt="Mammals Icon">
-                    <h2>Mammals</h2>
-                    <div class="species-count" id="mammal-count">0</div>
+                    <h2>MAMMALS</h2>
+                    <div class="species-count" id="mammal-count">0 SPECIES</div>
                 </div>
                 <div class="taxa-card" data-taxa="Burung">
                     <img src="assets/icon_birds.png" alt="Birds Icon">
-                    <h2>Birds</h2>
-                    <div class="species-count" id="bird-count">0</div>
+                    <h2>BIRDS</h2>
+                    <div class="species-count" id="bird-count">0 SPECIES</div>
                 </div>
             </div>
             <h2 id="neighbors-title">Our Wild Neighbors!</h2>
@@ -166,7 +166,7 @@
 
             const timer = setInterval(() => {
                 currentCount++;
-                element.textContent = currentCount;
+                element.textContent = `${currentCount} SPECIES`;
                 if (currentCount === finalCount) {
                     clearInterval(timer);
                 }
@@ -217,6 +217,11 @@
 
             data.forEach(item => {
                 const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.title = `Click to see locations for ${item.Jenis}`;
+                row.addEventListener('click', () => {
+                    window.location.href = `explore.html?species=${encodeURIComponent(item.Jenis)}`;
+                });
                 row.innerHTML = `
                     <td>${item.Jenis || '-'}</td>
                     <td><em>${item['Nama Ilmiah'] || '-'}</em></td>

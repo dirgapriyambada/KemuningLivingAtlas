@@ -134,6 +134,19 @@
             gap: 8px;
             margin-bottom: 10px;
         }
+        .species-item .iucn-status-filter {
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .species-item .iucn-status-filter:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+        .detail-panel .taxa-filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
         .detail-panel .taxa-filter-buttons button {
             flex: 1; padding: 8px; border: 1px solid #4a5a47; background: transparent;
             color: var(--muted); border-radius: 8px; cursor: pointer; transition: all 0.2s;
@@ -142,6 +155,17 @@
             background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: bold;
         }
 
+        /* Filter Status Display */
+        #filter-status-display {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            z-index: 1000;
+            font-family: 'WWF', sans-serif;
+            font-size: 28px;
+            color: var(--accent);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+        }
         /* Map Controls */
         .leaflet-control-container .leaflet-top.leaflet-right { margin-top: 80px; }
         .leaflet-bar a, .leaflet-bar a:hover {
@@ -154,11 +178,10 @@
             background-repeat: no-repeat;
             background-position: center;
             background-size: 22px;
-            filter: brightness(0); /* Change icon color to black */
         }
         .leaflet-control-zoom-in { background-image: url('assets/zoomin.png') !important; }
         .leaflet-control-zoom-out { background-image: url('assets/zoomout.png') !important; }
-        .reset-map-btn { background-image: url('assets/refresh.png'); background-size: 22px; background-repeat: no-repeat; background-position: center; font-size: 0 !important; filter: brightness(0); }
+        .reset-map-btn { background-image: url('assets/refresh.png'); background-size: 22px; background-repeat: no-repeat; background-position: center; font-size: 0 !important; }
 
 
         /* Mobile Responsiveness */
@@ -192,6 +215,8 @@
 <body>
 
     <div id="map"></div>
+
+    <div id="filter-status-display"></div>
 
     <div class="ui-container">
         <div class="search-panel minimized" id="search-panel">
@@ -263,6 +288,7 @@
         const searchInput = document.getElementById('searchSpecies');
         const autocompleteList = document.getElementById('autocomplete-list');
         const searchBtn = document.getElementById('searchBtn');
+        const filterStatusDisplay = document.getElementById('filter-status-display');
         const resetBtn = document.getElementById('resetBtn');
         const toggleSearchBtnInner = document.getElementById('toggle-search-btn-inner');
 
@@ -272,15 +298,18 @@
         let map;
         let initialBounds;
         let uniqueSpecies = [];
-        let currentSelectedPlot = null;
 
         // --- LEAFLET MAP SETUP ---
         function initializeMap() {
             map = L.map('map', { attributionControl: false, zoomControl: false }).setView([-7.135, 110.105], 15);
             L.control.zoom({ position: 'topright' }).addTo(map); // Moved to top-right
+            // Add imagery basemap
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri'
             }).addTo(map);
+            // Add labels layer on top
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}').addTo(map);
+
             L.control.attribution({ prefix: false }).addTo(map);
 
             // Custom Reset View Control
@@ -304,6 +333,7 @@
 
             map.on('zoomend', toggleGridLabels);
             map.on('click', () => {
+                filterStatusDisplay.textContent = ''; // Clear species filter text
                 hideDetailPanel();
             });
         }
@@ -326,16 +356,6 @@
                                     L.DomEvent.stopPropagation(e); // Prevent click from reaching the map
                                     selectPlot(plotName);
                                 },
-                                mouseover: (e) => {
-                                    // Don't apply hover effect if the plot is already selected
-                                    if (plotName !== currentSelectedPlot) {
-                                        e.target.setStyle({ weight: 2.5, fillOpacity: 0.3 });
-                                    }
-                                },
-                                mouseout: (e) => {
-                                    // Revert to the base or highlighted style, but not the selected style
-                                    gridLayer.resetStyle(e.target);
-                                }
                             });
                         }
                     }).addTo(map);
@@ -378,6 +398,13 @@
                     biodiversityData = results.data;
                     uniqueSpecies = [...new Set(biodiversityData.map(item => item.Jenis).concat(biodiversityData.map(item => item["Nama Ilmiah"])))].filter(Boolean).sort();
                     populateFilters(biodiversityData);
+
+                    // Check for URL parameters to auto-filter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const speciesToFilter = urlParams.get('species');
+                    if (speciesToFilter) {
+                        filterBySpecies(speciesToFilter);
+                    }
                 },
                 error: (err) => console.error("Error parsing CSV:", err)
             });
@@ -435,6 +462,22 @@
             detailPanel.classList.add('visible');
         }
 
+        // Helper object to format IUCN status. Now handles both full names and abbreviations.
+        const iucnStatusInfo = Object.fromEntries(Object.entries({
+            // Full Name keys
+            'Extinct': { abbr: 'EX', color: '#a83232' }, 'Extinct in the Wild': { abbr: 'EW', color: '#c73c3c' },
+            'Critically Endangered': { abbr: 'CR', color: '#e04b4b' }, 'Endangered': { abbr: 'EN', color: '#f0742f' },
+            'Vulnerable': { abbr: 'VU', color: '#f5a142' }, 'Near Threatened': { abbr: 'NT', color: '#f5d142' },
+            'Least Concern': { abbr: 'LC', color: '#c4ff9d' }, 'Data Deficient': { abbr: 'DD', color: '#A9A9A9' },
+            'Not Evaluated': { abbr: 'NE', color: '#A9A9A9' },
+            // Abbreviation keys (for robustness)
+            'EX': { abbr: 'EX', color: '#a83232' }, 'EW': { abbr: 'EW', color: '#c73c3c' },
+            'CR': { abbr: 'CR', color: '#e04b4b' }, 'EN': { abbr: 'EN', color: '#f0742f' },
+            'VU': { abbr: 'VU', color: '#f5a142' }, 'NT': { abbr: 'NT', color: '#f5d142' },
+            'LC': { abbr: 'LC', color: '#c4ff9d' }, 'DD': { abbr: 'DD', color: '#A9A9A9' },
+            'NE': { abbr: 'NE', color: '#A9A9A9' }
+        }).map(([key, value]) => [key.toLowerCase(), value]));
+
         function renderDetailPanel(plotName, taxaFilter = 'All') {
             const records = biodiversityData.filter(d => d.Plot === plotName);
             detailPlotName.textContent = `Plot Details: ${plotName}`;
@@ -458,9 +501,18 @@
                 )).values()];
                 
                 // 3. Render the deduplicated list
-                speciesListEl.innerHTML = uniqueRecords.map(r =>
-                    `<div class="species-item"><strong>${r.Jenis}</strong><div style="font-size:12px;color:#bce7b7">${r["Nama Ilmiah"]} • ${r.Bulan}/${r.Tahun}</div></div>`
-                ).join('');
+                speciesListEl.innerHTML = uniqueRecords.map(r => {
+                    let iucnHtml = '';
+                    const status = r['Status IUCN'];
+                    const statusInfo = status ? iucnStatusInfo[status.trim().toLowerCase()] : null;
+
+                    if (statusInfo) {
+                        const { abbr, color } = statusInfo;
+                        iucnHtml = ` • <a href="#" class="iucn-status-filter" data-status="${status}" style="font-weight:bold; color:${color};">IUCN: ${abbr}</a>`;
+                    }
+                    const speciesLink = `<a href="#" class="species-filter" data-species="${r.Jenis}" style="color: inherit; text-decoration: none;">${r.Jenis}</a>`;
+                    return `<div class="species-item"><strong>${speciesLink}</strong><div style="font-size:12px;color:#bce7b7;">${r["Nama Ilmiah"]} • ${r.Bulan}/${r.Tahun}${iucnHtml}</div></div>`;
+                }).join('');
             }
         }
 
@@ -502,18 +554,28 @@
             const monthGroup = document.getElementById('filterMonth');
             const yearGroup = document.getElementById('filterYear');
 
+            const taxaTranslations = { 'Mamalia': 'Mammals', 'Burung': 'Birds' };
+            const monthTranslations = {
+                "Januari": "January", "Februari": "February", "Maret": "March", "April": "April",
+                "Mei": "May", "Juni": "June", "Juli": "July", "Agustus": "August",
+                "September": "September", "Oktober": "October", "November": "November", "Desember": "December"
+            };
+
             const uniqueTaxa = [...new Set(data.map(item => item.Taxa))].filter(Boolean).sort();
             const uniqueYears = [...new Set(data.map(item => item.Tahun))].filter(Boolean).sort((a, b) => b - a);
             const monthOrder = { "Januari": 1, "Februari": 2, "Maret": 3, "April": 4, "Mei": 5, "Juni": 6, "Juli": 7, "Agustus": 8, "September": 9, "Oktober": 10, "November": 11, "Desember": 12 };
             const uniqueMonths = [...new Set(data.map(item => item.Bulan))].filter(Boolean).sort((a, b) => (monthOrder[a] || 99) - (monthOrder[b] || 99));
 
-            const createButtons = (items, container) => {
-                container.innerHTML = items.map(item => `<button data-value="${item}">${item}</button>`).join('');
+            const createButtons = (items, container, translations = {}) => {
+                container.innerHTML = items.map(item => {
+                    const display_text = translations[item] || item;
+                    return `<button data-value="${item}">${display_text}</button>`;
+                }).join('');
             };
 
-            createButtons(uniqueTaxa, taxaGroup);
+            createButtons(uniqueTaxa, taxaGroup, taxaTranslations);
             createButtons(uniqueYears, yearGroup);
-            createButtons(uniqueMonths, monthGroup);
+            createButtons(uniqueMonths, monthGroup, monthTranslations);
 
             document.querySelectorAll('.button-group').forEach(group => {
                 group.addEventListener('click', e => {
@@ -528,6 +590,45 @@
                 });
             });
         }
+        
+        // Detail panel taxa filter
+        document.getElementById('detail-taxa-filter').addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                document.querySelectorAll('#detail-taxa-filter button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                if (currentSelectedPlot) renderDetailPanel(currentSelectedPlot, e.target.dataset.taxa);
+            }
+        });
+
+        function filterByIucnStatus(statusToFilter) {
+            if (!statusToFilter || biodiversityData.length === 0) return;
+
+            // 1. Reset existing filters and UI state
+            resetAllFilters();
+            hideDetailPanel();
+
+            // 2. Find plots containing species with the specified IUCN status
+            const plotsToHighlight = [...new Set(biodiversityData
+                .filter(d => d['Status IUCN'] && d['Status IUCN'].trim().toLowerCase() === statusToFilter.trim().toLowerCase())
+                .map(d => d.Plot))];
+
+            // 3. Highlight the found plots on the map
+            highlightPlots(plotsToHighlight);
+        }
+
+        function filterBySpecies(speciesName) {
+            if (!speciesName || biodiversityData.length === 0) return;
+            // Don't call resetAllFilters, just reset the UI state manually
+            searchInput.value = '';
+            document.querySelectorAll('.button-group button.active').forEach(btn => btn.classList.remove('active'));
+            hideDetailPanel();
+
+            const plotsToHighlight = [...new Set(biodiversityData
+                .filter(d => d.Jenis === speciesName || d['Nama Ilmiah'] === speciesName)
+                .map(d => d.Plot))];
+            highlightPlots(plotsToHighlight);
+            filterStatusDisplay.textContent = speciesName;
+        }
 
         function getActiveButtonValue(groupId) {
             const activeButton = document.querySelector(`#${groupId} button.active`);
@@ -539,6 +640,12 @@
             const taxa = getActiveButtonValue('filterTaxa');
             const month = getActiveButtonValue('filterMonth');
             const year = getActiveButtonValue('filterYear');
+
+            // If no filters are active, just reset the grid and do nothing else.
+            if (!query && !taxa && !month && !year) {
+                resetGridStyles();
+                return;
+            }
 
             if (biodiversityData.length === 0) return;
 
@@ -552,8 +659,12 @@
             });
 
             const plotsToHighlight = [...new Set(filteredData.map(d => d.Plot))];
+            highlightPlots(plotsToHighlight);
+        }
+
+        function highlightPlots(plotNames) {
             resetGridStyles();
-            plotsToHighlight.forEach(plotName => {
+            plotNames.forEach(plotName => {
                 if (gridLayers[plotName]) {
                     gridLayers[plotName].setStyle(getHighlightStyle());
                     gridLayers[plotName].bringToFront();
@@ -574,6 +685,7 @@
 
         function resetMapState() {
             resetAllFilters();
+            filterStatusDisplay.textContent = ''; // Explicitly clear status text on full map reset
             hideDetailPanel();
             if (initialBounds) {
                 map.fitBounds(initialBounds);
@@ -589,13 +701,18 @@
         searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') applyFilters(); });
         resetBtn.addEventListener('click', resetAllFilters);
 
-        document.getElementById('detail-taxa-filter').addEventListener('click', e => {
-            if (e.target.tagName === 'BUTTON') {
-                document.querySelectorAll('#detail-taxa-filter button').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                if (currentSelectedPlot) {
-                    renderDetailPanel(currentSelectedPlot, e.target.dataset.taxa);
-                }
+        speciesListEl.addEventListener('click', e => {
+            const target = e.target.closest('.iucn-status-filter');
+            if (target) {
+                e.preventDefault();
+                const status = target.dataset.status;
+                filterByIucnStatus(status);
+            }
+            const speciesTarget = e.target.closest('.species-filter');
+            if (speciesTarget) {
+                e.preventDefault();
+                const species = speciesTarget.dataset.species;
+                filterBySpecies(species);
             }
         });
 
