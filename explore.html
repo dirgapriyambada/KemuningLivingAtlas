@@ -214,6 +214,13 @@
 
 <body>
 
+    <script>
+        // Gatekeeper script: Check if the user is logged in.
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+
     <div id="map"></div>
 
     <div id="filter-status-display"></div>
@@ -270,6 +277,7 @@
             <a href="explore.html" class="active">EXPLORE</a>
             <a href="species.html">SPECIES</a>
             <a href="about.html">ABOUT</a>
+            <a href="#" id="logout-btn">LOGOUT</a>
         </div>
     </nav>
 
@@ -716,6 +724,15 @@
             }
         });
 
+        // Logout functionality
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                sessionStorage.removeItem('isLoggedIn');
+                window.location.href = 'login.html';
+            });
+        }
         // Navigation handler
         document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => {
             const href = a.getAttribute('href');
