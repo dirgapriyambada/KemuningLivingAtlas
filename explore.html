@@ -78,7 +78,7 @@
             transition: opacity 0.4s ease, transform 0.4s ease;
             white-space: nowrap; /* Prevent text from wrapping */
         }
-        .search-panel-expanded + #explore-title { opacity: 0; transform: translateX(-20px); pointer-events: none; }
+        .search-panel:not(.minimized) ~ #explore-title { opacity: 0; transform: translateX(-20px); pointer-events: none; }
 
         /* Search Input & Autocomplete */
         .search-container { position: relative; }
@@ -386,7 +386,6 @@
             toggleSearchBtn.style.backgroundImage = isMinimized ? `url('assets/search.png')` : `url('assets/back.png')`;
             toggleSearchBtn.title = isMinimized ? 'Open Panel' : 'Close Panel';
             // The inner button always shows the back icon
-            document.querySelector('.ui-container').classList.toggle('search-panel-expanded', !isMinimized);
         };
 
         // Initial setup for icons
