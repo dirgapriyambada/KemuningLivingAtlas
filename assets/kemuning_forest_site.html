@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kemuning Forest Living Atlas</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0 }
+    :root{
+      --bg:#1c2d15; --accent:#c4ff9d; --muted:#6b7a63; --panel:#23321f; --highlight:#4aa3ff;
+    }
+    body{
+      font-family: 'Raleway', system-ui, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--accent);
+      overflow-x:hidden;
+      scroll-behavior:smooth;
+    }
+    @font-face {
+        font-family: 'WWF';
+        src: url('assets/wwf.ttf') format('truetype');
+    }
+    @font-face {
+        font-family: 'Raleway';
+        src: url('assets/Raleway-Medium.ttf') format('truetype');
+    }
+    nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 40px;background:rgba(12,18,10,0.98);z-index:1200}
+    .nav-logo img { height: 40px; transition: transform 0.2s; }
+    .nav-logo:hover img { transform: scale(1.1); }
+    .nav-links { display: flex; gap: 20px; }
+    .nav-links a{color:var(--accent);text-decoration:none;font-family:'WWF', sans-serif; font-size: 20px; letter-spacing: 1px; padding:6px 14px;border-radius:20px;transition:all .22s}
+    .nav-links a.active, .nav-links a:hover{background:#314d25;color:#fff}
+
+    section{height:100vh;padding:84px 72px;display:flex;align-items:center}
+
+    /* HOME */
+    #home{background:url('assets/bg.jpg') center/cover no-repeat;flex-direction:column;justify-content:center}
+    #home h1{font-family: 'WWF', sans-serif; font-size:64px;line-height:1.02;margin-bottom:12px;opacity:0;transform:translateY(24px);animation:fadeInUp .9s ease forwards}
+    #home p{max-width:640px;font-size:15px;opacity:0;transform:translateY(24px);animation:fadeInUp .9s ease .35s forwards; margin-bottom: 24px;}
+    .explore-btn{display:inline-block; padding: 12px 28px; border: 2px solid var(--accent); color: var(--accent); text-decoration: none; border-radius: 8px; font-weight: 700; transition: all .3s; opacity:0; transform:translateY(24px); animation:fadeInUp .9s ease .6s forwards;}
+    .explore-btn:hover{background: var(--accent); color: var(--bg);}
+    
+    /* LOCATION */
+    /* Set height to auto for sections that shouldn't be fullscreen */
+    #location, #explore, #species, #about { height: auto; min-height: 100vh; }
+    #location{background:linear-gradient(180deg, rgba(28,45,21,0.95) 0%, rgba(28,45,21,1) 100%);gap:40px;align-items:flex-start; padding-top: 120px; padding-bottom: 120px;}
+    #location .text{flex:1; font-family: 'Raleway', sans-serif;}
+    #location h1{font-family: 'WWF', sans-serif; font-size:54px;margin-bottom:8px;color:var(--accent)}
+    #location p{max-width:520px;color:var(--muted)}
+    #location .map{flex:1;display:flex;align-items:center;justify-content:center}
+    #location .map img{width:92%;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.55);cursor:zoom-in}
+    #location.visible .map img{transform:scale(1);opacity:1}
+
+    /* Generic Scroll Animation */
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+    .visible .animate-on-scroll { opacity: 1; transform: translateY(0); }
+
+    @keyframes fadeInUp{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:none}}
+
+    /* EXPLORE section: grid-based webGIS */
+    #explore{background:linear-gradient(180deg, rgba(20,30,18,1) 0%, rgba(16,24,14,1) 100%);flex-direction:column;padding:84px 48px;}
+    .explore-container{display:grid;grid-template-columns:320px 1fr 360px;gap:28px;align-items:start}
+
+    /* left filter panel */
+    .panel{background:var(--panel);padding:18px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);color:#dfeee0; transition: all 0.3s ease; position: relative;}
+    .panel h3{font-size:14px;margin-bottom:10px}
+    .search{display:flex;gap:8px;margin-bottom:12px}
+    .search input{flex:1;padding:10px;border-radius:8px;border:0;background:#2b3b2a;color:var(--accent)}
+    .filters{display:flex;flex-direction:column;gap:8px}
+    .filters select, .filters input[type=month]{padding:8px;border-radius:8px;border:0;background:#2b3b2a;color:var(--accent)}
+    .toggle{display:flex;align-items:center;gap:8px}
+    #minimize-panel-btn { position: absolute; top: 10px; right: 10px; background: #2b3b2a; border: none; color: var(--accent); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 28px; text-align: center; }
+    .panel.minimized { width: 60px; height: 60px; padding: 0; display: flex; align-items: center; justify-content: center; }
+    .panel.minimized > *:not(#minimize-panel-btn) { display: none; }
+    .panel.minimized #minimize-panel-btn { position: static; }
+
+    /* center map area (image with grid overlay) */
+    .map-wrap{position:relative;background:#0f170f;border-radius:12px;padding:12px; grid-column: 2 / 4; /* Make map take up center and right space */}
+    .map-canvas{width:100%;height:640px;border-radius:8px;overflow:hidden;position:relative;background:#000;}
+    /* Leaflet Tooltip/Label Styling */
+    .leaflet-tooltip.grid-label { background-color: transparent; border: none; box-shadow: none; color: #fff; font-weight: bold; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+
+    /* grid overlay: 8x6 for demo */
+    /* The old grid div is no longer needed as Leaflet handles it */
+    /* .grid{position:absolute;inset:30px;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(6,1fr);gap:6px}
+    .cell{background:rgba(50,70,46,0.28);border-radius:6px;border:1px solid rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;font-size:12px;color:#cfecc5;cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s}
+    .cell:hover{transform:translateY(-6px);box-shadow:0 8px 22px rgba(0,0,0,.5)}
+    .cell.highlight{outline:3px solid var(--highlight);box-shadow:0 10px 30px rgba(74,163,255,.18)}
+    .cell.found{background:rgba(76,139,89,0.32);}
+
+    /* right detail panel */
+    .detail{display:flex;flex-direction:column;gap:12px}
+    .detail .card{background:var(--panel);padding:14px;border-radius:10px;color:#e9f7e6} /* This will now be inside the left panel */
+    .card h4{font-size:13px;margin-bottom:8px}
+    .species-list{max-height:260px;overflow:auto;padding-right:6px}
+    .species-item{padding:8px;border-radius:8px;background:rgba(0,0,0,0.06);margin-bottom:8px}
+
+    /* table */
+    .table-wrap{margin-top:18px;background:var(--panel);border-radius:10px;padding:12px;color:#dfeee0}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px;text-align:left;border-bottom:1px solid rgba(0,0,0,0.25)}
+    tbody tr:hover{background:rgba(255,255,255,0.02);cursor:pointer}
+    .tag{display:inline-block;padding:4px 8px;border-radius:999px;background:#324a35;font-size:12px}
+
+    /* responsive */
+    @media(max-width:1000px){
+      .explore-container{grid-template-columns:1fr; /* On smaller screens, stack everything */ }
+      .map-canvas{height:520px}
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="about.html" class="nav-logo">
+        <img src="assets/jawi.png" alt="Javan Wildlife Institute Logo">
+    </a>
+    <div class="nav-links">
+        <a href="#home" class="active">HOME</a>
+        <a href="#location">LOCATION</a>
+        <a href="explore.html">EXPLORE</a>
+        <a href="species.html">SPECIES</a>
+        <a href="about.html">ABOUT</a>
+    </div>
+  </nav>
+
+  <section id="home">
+    <h1>KEMUNING FOREST <br> LIVING ATLAS</h1>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce egestas sollicitudin sem, a suscipit tellus dapibus nec. Fusce porta vestibulum velit et congue.</p>
+    <a href="explore.html" class="explore-btn">EXPLORE</a>
+  </section>
+
+  <section id="location" class="scroll-reveal">
+    <div class="text">
+      <h1 style="transition-delay: 0.1s;">KEMUNING FOREST</h1>
+      <p style="transition-delay: 0.2s;">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce egestas sollicitudin sem, a suscipit tellus dapibus nec. Fusce porta vestibulum velit et congue.</p>
+    </div>
+    <div class="map">
+      <img src="assets/map.png" alt="Kemuning Forest Map" class="animate-on-scroll" style="transition-delay: 0.3s;">
+    </div>
+  </section>
+
+  <!-- Fullscreen Map Modal -->
+  <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center; cursor:zoom-out;">
+    <span id="close-modal" style="position:absolute; top:20px; right:35px; font-size:40px; color:white; cursor:pointer; line-height:1;">&times;</span>
+    <img id="modal-img" src="" alt="Fullscreen Map" style="max-width:90%; max-height:90%; border-radius:10px;">
+  </div>
+
+  <script>
+    // NAV smooth & active
+    const navLinks = document.querySelectorAll('nav a, .explore-btn');
+    navLinks.forEach(a => a.addEventListener('click', e => {
+      const href = a.getAttribute('href');
+      if (href.startsWith('#')) {
+        // Prevent default only for hash links on the same page
+        if (window.location.pathname.endsWith('/') || window.location.pathname.endsWith('kemuning_forest_site.html')) {
+            e.preventDefault();
+        } else {
+            // If on another page, just go to the main page's anchor
+            window.location.href = 'kemuning_forest_site.html' + href;
+            return;
+        }
+        const id = href.slice(1);
+        
+        document.querySelectorAll('nav a').forEach(n => {
+          n.classList.toggle('active', n.getAttribute('href') === `#${id}`);
+        });
+
+        const el = document.getElementById(id);
+        if(el) el.scrollIntoView({behavior:'smooth'});
+      }
+      // For external links like explore.html, let the browser handle it
+      else if (!href.startsWith('#')) {
+        window.location.href = href;
+      }
+    }));
+
+    // Reveal sections on scroll
+    // We only animate location now
+    const sectionsToReveal = document.querySelectorAll('.scroll-reveal');
+    const checkVisibility = () => {
+      sectionsToReveal.forEach(section => {
+        const rect = section.getBoundingClientRect();
+        // Add .visible class when scrolling down
+        if (rect.top < window.innerHeight - 150 && rect.bottom >= 0) {
+          section.classList.add('visible');
+        } else {
+          // Remove .visible class when scrolling up (out of view)
+          section.classList.remove('visible');
+        }
+      });
+    };
+    window.addEventListener('scroll', checkVisibility);
+
+    // Fullscreen map modal
+    const mapImage = document.querySelector('#location .map img');
+    const modal = document.getElementById('map-modal');
+    const modalImg = document.getElementById('modal-img');
+    const closeModal = document.getElementById('close-modal');
+
+    mapImage.addEventListener('click', function() {
+      modal.style.display = 'flex';
+      modalImg.src = this.src;
+    });
+
+    const hideModal = () => modal.style.display = 'none';
+    closeModal.addEventListener('click', hideModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideModal(); });
+
+  </script>
+</body>
+</html>

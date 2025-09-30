@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Kemuning Forest Living Atlas</title>
+    <style>
+        :root {
+            --bg: #1c2d15; --accent: #c4ff9d; --muted: #6b7a63;
+        }
+        body {
+            font-family: 'Raleway', system-ui, Arial, sans-serif;
+            background: linear-gradient(rgba(28, 45, 21, 0.97), rgba(28, 45, 21, 0.99)), url('assets/bg.jpg') center/cover no-repeat fixed;
+            color: var(--accent); margin: 0;
+            padding-top: 80px; display: flex; align-items: center; justify-content: center;
+            min-height: calc(100vh - 80px);
+        }
+        @font-face {
+            font-family: 'WWF';
+            src: url('assets/wwf.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'Raleway';
+            src: url('assets/Raleway-Medium.ttf') format('truetype');
+        }
+        nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 40px;background:rgba(12,18,10,0.98);z-index:1200}
+        .nav-logo img { height: 40px; transition: transform 0.2s; }
+        .nav-logo:hover img { transform: scale(1.1); }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a{color:var(--accent);text-decoration:none;font-family:'WWF', sans-serif; font-size: 20px; letter-spacing: 1px; padding:6px 14px;border-radius:20px;transition:all .22s}
+        .nav-links a.active, .nav-links a:hover{background:#314d25;color:#fff}
+        .container { text-align: center; }
+        .container h1 { font-family: 'WWF', sans-serif; font-size: 48px; letter-spacing: 1px; }
+        .container p { color: var(--muted); max-width: 600px; margin: 0 auto; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="about.html" class="nav-logo">
+            <img src="assets/jawi.png" alt="Javan Wildlife Institute Logo">
+        </a>
+        <div class="nav-links">
+            <a href="index.html#home">HOME</a>
+            <a href="index.html#location">LOCATION</a>
+            <a href="explore.html">EXPLORE</a>
+            <a href="species.html">SPECIES</a>
+            <a href="about.html" class="active">ABOUT</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>About This Atlas</h1>
+        <p>This Living Atlas is based on the Biodiversity Survey in the Kemuning Forest by the Javan Wildlife Institute, 2024-2025.</p>
+    </div>
+
+    <script>
+        // Navigation handler
+        document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => {
+            const href = a.getAttribute('href');
+            if (href.startsWith('http') || !href.includes('#')) {
+                return; // Let browser handle normal links
+            }
+            // For links with anchors to other pages
+            e.preventDefault();
+            window.location.href = href.replace('kemuning_forest_site.html', 'index.html');
+        }));
+    </script>
+
+</body>
+</html>
