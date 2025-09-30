@@ -46,6 +46,7 @@
             <a href="explore.html">EXPLORE</a>
             <a href="species.html">SPECIES</a>
             <a href="about.html" class="active">ABOUT</a>
+            <a href="#" id="logout-btn" style="display: none;">LOGOUT</a>
         </div>
     </nav>
 
@@ -55,6 +56,19 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            const logoutBtn = document.getElementById('logout-btn');
+            if (isLoggedIn && logoutBtn) {
+                logoutBtn.style.display = 'inline-block';
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    sessionStorage.removeItem('isLoggedIn');
+                    window.location.href = 'login.html';
+                });
+            }
+        });
+
         // Navigation handler
         document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => {
             const href = a.getAttribute('href');

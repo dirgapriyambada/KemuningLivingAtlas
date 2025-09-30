@@ -107,6 +107,7 @@
             <a href="explore.html">EXPLORE</a>
             <a href="species.html" class="active">SPECIES</a>
             <a href="about.html">ABOUT</a>
+            <a href="#" id="logout-btn" style="display: none;">LOGOUT</a>
         </div>
     </nav>
 
@@ -159,6 +160,20 @@
         let biodiversityData = [];
 
         // --- Animate Number Function ---
+        function setupNav() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            const logoutBtn = document.getElementById('logout-btn');
+            if (isLoggedIn && logoutBtn) {
+                logoutBtn.style.display = 'inline-block';
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    sessionStorage.removeItem('isLoggedIn');
+                    window.location.href = 'login.html';
+                });
+            }
+        }
+
+
         function animateCount(element, finalCount) {
             let currentCount = 0;
             const duration = 1000; // 1 second
@@ -175,6 +190,7 @@
 
         // --- Data Loading ---
         document.addEventListener('DOMContentLoaded', () => {
+            setupNav();
             Papa.parse('assets/biodiversity.csv', {
                 download: true,
                 header: true,

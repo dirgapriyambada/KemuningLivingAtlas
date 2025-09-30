@@ -134,6 +134,7 @@
         <a href="explore.html">EXPLORE</a>
         <a href="species.html">SPECIES</a>
         <a href="about.html">ABOUT</a>
+        <a href="#" id="logout-btn" style="display: none;">LOGOUT</a>
     </div>
   </nav>
 
@@ -166,6 +167,20 @@
   </div>
 
   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+        const logoutBtn = document.getElementById('logout-btn');
+        if (isLoggedIn && logoutBtn) {
+            logoutBtn.style.display = 'inline-block';
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                sessionStorage.removeItem('isLoggedIn');
+                window.location.href = 'login.html';
+            });
+        }
+        checkVisibility(); // Initial check for scroll animations
+    });
+
     // NAV smooth & active
     const navLinks = document.querySelectorAll('nav a, .explore-btn');
     navLinks.forEach(a => a.addEventListener('click', e => {

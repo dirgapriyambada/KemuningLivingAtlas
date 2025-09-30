@@ -70,7 +70,12 @@
             transition: opacity 0.2s;
         }
         .login-btn:hover { opacity: 0.9; }
-        #error-message { color: #ff8a8a; margin-top: 15px; height: 20px; }
+        #message { margin-top: 15px; height: 20px; }
+        .error { color: #ff8a8a; }
+        .success { color: #c4ff9d; }
+        .register-link { margin-top: 20px; font-size: 14px; color: var(--muted); }
+        .register-link a { color: var(--accent); text-decoration: none; }
+        .register-link a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -100,30 +105,46 @@
                 <input type="password" id="password" name="password" required>
             </div>
             <button type="submit" class="login-btn">Login</button>
-            <p id="error-message"></p>
+            <p id="message"></p>
         </form>
+        <p class="register-link">Don't have an account? <a href="register.html">Request one</a></p>
     </div>
 
     <script>
         // This script handles login and also ensures the logout button is not shown on the login page itself.
         document.addEventListener('DOMContentLoaded', () => {
-            // If a user is somehow logged in and lands here, log them out.
-            if (sessionStorage.getItem('isLoggedIn') === 'true') {
-                sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('isLoggedIn'); // Always clear session on login page load
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('registered') === 'true') {
+                const messageEl = document.getElementById('message');
+                messageEl.textContent = 'Registration successful! Please log in.';
+                messageEl.className = 'success';
             }
         });
 
-        document.getElementById('login-form').addEventListener('submit', function(e) {
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('error-message');
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const messageEl = document.getElementById('message');
 
-            if (username === 'admin' && password === 'admin') {
-                sessionStorage.setItem('isLoggedIn', 'true');
-                window.location.href = 'explore.html';
-            } else {
-                errorMessage.textContent = 'Invalid username or password.';
+            try {
+                const response = await fetch('assets/users.json');
+                if (!response.ok) throw new Error('Could not load user data.');
+                const users = await response.json();
+
+                if (users[username] && users[username] === password) {
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    window.location.href = 'explore.html';
+                } else {
+                    messageEl.textContent = 'Invalid username or password.';
+                    messageEl.className = 'error';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                messageEl.textContent = 'A system error occurred. Please try again later.';
+                messageEl.className = 'error';
             }
         });
     </script>
