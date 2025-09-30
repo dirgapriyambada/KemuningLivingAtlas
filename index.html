@@ -37,10 +37,16 @@
     section{height:100vh;padding:84px 72px;display:flex;align-items:center}
 
     /* HOME */
-    #home{background:url('assets/bg.jpg') center/cover no-repeat;flex-direction:column;justify-content:center}
-    #home h1{font-family: 'WWF', sans-serif; font-size:64px;line-height:1.02;margin-bottom:12px;opacity:0;transform:translateY(24px);animation:fadeInUp .9s ease forwards}
-    #home p{max-width:640px;font-size:15px;opacity:0;transform:translateY(24px);animation:fadeInUp .9s ease .35s forwards; margin-bottom: 24px;}
-    .explore-btn{display:inline-block; padding: 12px 28px; border: 2px solid var(--accent); color: var(--accent); text-decoration: none; border-radius: 8px; font-weight: 700; transition: all .3s; opacity:0; transform:translateY(24px); animation:fadeInUp .9s ease .6s forwards;}
+    #home{background:url('assets/bg.jpg') center/cover no-repeat; flex-direction:row; justify-content:space-between; align-items:flex-end; text-align:left;}
+    .home-content-left { max-width: 50%; }
+    #home h1{font-family: 'WWF', sans-serif; font-size:8.5vw; line-height:1; margin-bottom:20px; opacity:0; transform:translateY(24px); animation:fadeInUp .9s ease forwards; text-align: left;}
+    #home p{
+        font-family: 'WWF', sans-serif;
+        max-width:450px; font-size:22px; letter-spacing: 0.5px; line-height: 1.4; text-align: justify;
+        opacity:0; transform:translateY(24px); animation:fadeInUp .9s ease .35s forwards;
+        margin-bottom: 0;
+    }
+    .explore-btn{display:inline-block; padding: 18px 40px; font-size: 18px; border: 2px solid var(--accent); color: var(--accent); text-decoration: none; border-radius: 8px; font-weight: 700; transition: all .3s; opacity:0; transform:translateY(24px); animation:fadeInUp .9s ease .6s forwards;}
     .explore-btn:hover{background: var(--accent); color: var(--bg);}
     
     /* LOCATION */
@@ -49,7 +55,7 @@
     #location{background:linear-gradient(180deg, rgba(28,45,21,0.95) 0%, rgba(28,45,21,1) 100%);gap:40px;align-items:flex-start; padding-top: 120px; padding-bottom: 120px;}
     #location .text{flex:1; font-family: 'Raleway', sans-serif;}
     #location h1{font-family: 'WWF', sans-serif; font-size:54px;margin-bottom:8px;color:var(--accent)}
-    #location p{max-width:520px;color:var(--muted)}
+    #location p{max-width:520px;color:var(--muted); text-align: justify;}
     #location .map{flex:1;display:flex;align-items:center;justify-content:center}
     #location .map img{width:92%;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.55);cursor:zoom-in}
     #location.visible .map img{transform:scale(1);opacity:1}
@@ -132,15 +138,21 @@
   </nav>
 
   <section id="home">
-    <h1>KEMUNING FOREST <br> LIVING ATLAS</h1>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce egestas sollicitudin sem, a suscipit tellus dapibus nec. Fusce porta vestibulum velit et congue.</p>
+    <div class="home-content-left">
+        <h1>KEMUNING FOREST<br>LIVING ATLAS</h1>
+        <p>A living atlas of birds and mammals in a forest sustained by decades of coffee-based agroforestry.</p>
+    </div>
     <a href="explore.html" class="explore-btn">EXPLORE</a>
   </section>
 
   <section id="location" class="scroll-reveal">
     <div class="text">
       <h1 style="transition-delay: 0.1s;">KEMUNING FOREST</h1>
-      <p style="transition-delay: 0.2s;">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce egestas sollicitudin sem, a suscipit tellus dapibus nec. Fusce porta vestibulum velit et congue.</p>
+      <p style="transition-delay: 0.2s;">
+        Kemuning Forest is one of the last tropical lowland forests in Central Java, home to incredible biodiversity and a community-driven coffee agroforestry tradition that has thrived for years. Managed together by PERUM Perhutani and local villagers, the forest shows how conservation and livelihoods can grow side by side.
+        <br><br>
+        Since 2016, the Javan Wildlife Institute (JAWI) has worked closely with the people of Kemuning—leading research, protecting wildlife, and empowering communities to create sustainable forest-based products. More than just a forest, Kemuning is a living proof that humans, nature, and wildlife can thrive in harmony when we care for each other.
+      </p>
     </div>
     <div class="map">
       <img src="assets/map.png" alt="Kemuning Forest Map" class="animate-on-scroll" style="transition-delay: 0.3s;">
