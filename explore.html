@@ -321,9 +321,21 @@
                             const plotName = feature.properties.Name;
                             gridLayers[plotName] = layer;
                             layer.bindTooltip(plotName, { permanent: true, direction: 'center', className: 'grid-label' });
-                            layer.on('click', (e) => {
-                                L.DomEvent.stopPropagation(e); // Mencegah klik "menembus" ke peta
-                                selectPlot(plotName)
+                            layer.on({
+                                click: (e) => {
+                                    L.DomEvent.stopPropagation(e); // Prevent click from reaching the map
+                                    selectPlot(plotName);
+                                },
+                                mouseover: (e) => {
+                                    // Don't apply hover effect if the plot is already selected
+                                    if (plotName !== currentSelectedPlot) {
+                                        e.target.setStyle({ weight: 2.5, fillOpacity: 0.3 });
+                                    }
+                                },
+                                mouseout: (e) => {
+                                    // Revert to the base or highlighted style, but not the selected style
+                                    gridLayer.resetStyle(e.target);
+                                }
                             });
                         }
                     }).addTo(map);
