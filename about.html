@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preload" href="assets/wwf.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="assets/Raleway-Medium.ttf" as="font" type="font/ttf" crossorigin>
     <title>About - Kemuning Forest Living Atlas</title>
     <style>
         :root {
@@ -18,10 +20,12 @@
         @font-face {
             font-family: 'WWF';
             src: url('assets/wwf.ttf') format('truetype');
+            font-display: swap;
         }
         @font-face {
             font-family: 'Raleway';
             src: url('assets/Raleway-Medium.ttf') format('truetype');
+            font-display: swap;
         }
         nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 40px;background:rgba(12,18,10,0.98);z-index:1200}
         .nav-logo img { height: 40px; transition: transform 0.2s; }

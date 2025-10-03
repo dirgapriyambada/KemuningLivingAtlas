@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preload" href="assets/wwf.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="assets/Raleway-Medium.ttf" as="font" type="font/ttf" crossorigin>
     <title>Species - Kemuning Forest Living Atlas</title>
     <style>
         :root {
             --bg: #1c2d15; --accent: #c4ff9d; --muted: #6b7a63; --panel: #23321f;
         }
         body {
-            font-family: Inter, system-ui, Arial, sans-serif;
             font-family: 'Raleway', system-ui, Arial, sans-serif;
             background: linear-gradient(rgba(28, 45, 21, 0.97), rgba(28, 45, 21, 0.99)), url('assets/bg.jpg') center/cover no-repeat fixed;
             color: var(--accent); margin: 0;
@@ -18,10 +19,12 @@
         @font-face {
             font-family: 'WWF';
             src: url('assets/wwf.ttf') format('truetype');
+            font-display: swap;
         }
         @font-face {
             font-family: 'Raleway';
             src: url('assets/Raleway-Medium.ttf') format('truetype');
+            font-display: swap;
         }
         nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 40px;background:rgba(12,18,10,0.98);z-index:1200}
         .nav-logo img { height: 40px; transition: transform 0.2s; }
