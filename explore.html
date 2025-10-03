@@ -277,7 +277,7 @@
             <a href="explore.html" class="active">EXPLORE</a>
             <a href="species.html">SPECIES</a>
             <a href="about.html">ABOUT</a>
-            <a href="#" id="logout-btn">LOGOUT</a>
+            <span id="auth-link-container"></span>
         </div>
     </nav>
 
@@ -725,14 +725,21 @@
         });
 
         // Logout functionality
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                sessionStorage.removeItem('isLoggedIn');
-                window.location.href = 'login.html';
-            });
-        }
+        const authContainer = document.getElementById('auth-link-container');
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+
+        if (isLoggedIn) {
+            authContainer.innerHTML = '<a href="#" id="logout-btn">LOGOUT</a>';
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    sessionStorage.removeItem('isLoggedIn');
+                    window.location.href = 'login.html';
+                });
+            }
+        } // No 'else' needed since this page is protected
+
         // Navigation handler
         document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => {
             const href = a.getAttribute('href');
