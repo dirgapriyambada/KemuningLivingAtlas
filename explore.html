@@ -372,8 +372,7 @@
                         }
                     }).addTo(map);
                     initialBounds = gridLayer.getBounds();
-                    map.fitBounds(initialBounds);
-                    // toggleGridLabels is called by 'zoomend' after fitBounds
+                    map.flyToBounds(initialBounds, { duration: 2, easeLinearity: 0.25 });
                 })
                 .catch(error => console.error('Error loading GeoJSON:', error));
         }
@@ -744,16 +743,6 @@
             }
         } // No 'else' needed since this page is protected
 
-        // Navigation handler
-        document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => {
-            const href = a.getAttribute('href');
-            if (href.startsWith('http') || !href.includes('#')) {
-                return; // Let browser handle normal links
-            }
-            // For links with anchors to other pages
-            e.preventDefault();
-            window.location.href = href.replace('kemuning_forest_site.html', 'index.html');
-        }));
 
     </script>
 </body>

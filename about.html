@@ -77,16 +77,6 @@
             }
         });
 
-        // Navigation handler
-        document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => {
-            const href = a.getAttribute('href');
-            if (href.startsWith('http') || !href.includes('#')) {
-                return; // Let browser handle normal links
-            }
-            // For links with anchors to other pages
-            e.preventDefault();
-            window.location.href = href.replace('kemuning_forest_site.html', 'index.html');
-        }));
     </script>
 
 </body>

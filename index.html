@@ -59,9 +59,15 @@
     #location{background:linear-gradient(180deg, rgba(28,45,21,0.95) 0%, rgba(28,45,21,1) 100%);gap:40px;align-items:flex-start; padding-top: 120px; padding-bottom: 120px;}
     #location .text{flex:1; font-family: 'Raleway', sans-serif;}
     #location h1{font-family: 'WWF', sans-serif; font-size:54px;margin-bottom:8px;color:var(--accent)}
-    #location p{max-width:520px;color:var(--muted); text-align: justify;}
-    #location .map{flex:1;display:flex;align-items:center;justify-content:center}
-    #location .map img{width:92%;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.55);cursor:zoom-in}
+    #location p{max-width:520px;color:var(--muted); text-align: justify; padding-right: 20px;}
+    #location .map-container{
+        flex: 1.2; /* Give map a bit more space */
+        height: 60vh; /* Define a good height */
+        border-radius:14px;
+        box-shadow:0 18px 40px rgba(0,0,0,.55);
+        overflow: hidden; /* Ensures border-radius is respected by map */
+    }
+    #location-map { width: 100%; height: 100%; background: #000; }
     #location.visible .map img{transform:scale(1);opacity:1}
 
     /* Generic Scroll Animation */
@@ -159,13 +165,14 @@
         Since 2016, the Javan Wildlife Institute (JAWI) has worked closely with the people of Kemuning—leading research, protecting wildlife, and empowering communities to create sustainable forest-based products. More than just a forest, Kemuning is a living proof that humans, nature, and wildlife can thrive in harmony when we care for each other.
       </p>
     </div>
-    <div class="map">
-      <img src="assets/map.png" alt="Kemuning Forest Map" class="animate-on-scroll" style="transition-delay: 0.3s;">
+    <div class="map-container animate-on-scroll" style="transition-delay: 0.3s;">
+      <div id="location-map"></div>
     </div>
   </section>
 
   <!-- Fullscreen Map Modal -->
-  <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center; cursor:zoom-out;">
+  <!-- This modal is no longer used by the new interactive map -->
+  <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center; cursor:zoom-out; display: none !important;">
     <span id="close-modal" style="position:absolute; top:20px; right:35px; font-size:40px; color:white; cursor:pointer; line-height:1;">&times;</span>
     <img id="modal-img" src="" alt="Fullscreen Map" style="max-width:90%; max-height:90%; border-radius:10px;">
   </div>
@@ -191,31 +198,24 @@
 
     // NAV smooth & active
     const navLinks = document.querySelectorAll('nav a, .explore-btn');
-    navLinks.forEach(a => a.addEventListener('click', e => {
-      const href = a.getAttribute('href');
-      if (href.startsWith('#')) {
-        // Prevent default only for hash links on the same page
-        if (window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html')) {
-            e.preventDefault();
-        } else {
-            // If on another page, just go to the main page's anchor
-            window.location.href = 'index.html' + href;
-            return;
-        }
-        const id = href.slice(1);
-        
-        document.querySelectorAll('nav a').forEach(n => {
-          n.classList.toggle('active', n.getAttribute('href') === `#${id}`);
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            // Check if it's an on-page anchor link
+            if (href.startsWith('#')) {
+                e.preventDefault(); // Prevent default jump
+                const targetId = href.substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                    // Update active class on nav links
+                    document.querySelectorAll('.nav-links a').forEach(navLink => navLink.classList.remove('active'));
+                    document.querySelector(`.nav-links a[href="${href}"]`).classList.add('active');
+                }
+            }
+            // For all other links (e.g., explore.html), let the browser handle it normally.
         });
-
-        const el = document.getElementById(id);
-        if(el) el.scrollIntoView({behavior:'smooth'});
-      }
-      // For external links like explore.html, let the browser handle it
-      else if (!href.startsWith('#')) {
-        window.location.href = href;
-      }
-    }));
+    });
 
     // Reveal sections on scroll
     // We only animate location now
@@ -234,22 +234,46 @@
     };
     window.addEventListener('scroll', checkVisibility);
 
-    // Fullscreen map modal
-    const mapImage = document.querySelector('#location .map img');
-    const modal = document.getElementById('map-modal');
-    const modalImg = document.getElementById('modal-img');
-    const closeModal = document.getElementById('close-modal');
+    // --- Location Map Setup ---
+    let locationMap;
+    let geoJsonLayer;
+    let mapInitialized = false;
 
-    mapImage.addEventListener('click', function() {
-      modal.style.display = 'flex';
-      modalImg.src = this.src;
-    });
+    function setupLocationMap() {
+        if (mapInitialized) return;
+        mapInitialized = true;
 
-    const hideModal = () => modal.style.display = 'none';
-    closeModal.addEventListener('click', hideModal);
-    modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideModal(); });
+        locationMap = L.map('location-map', {
+            attributionControl: false,
+            zoomControl: false,
+            scrollWheelZoom: false,
+            dragging: false,
+            touchZoom: false,
+            doubleClickZoom: false,
+        }).setView([-7.135, 110.105], 13);
 
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        }).addTo(locationMap);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}').addTo(locationMap);
+
+        fetch('assets/kemuning.geojson')
+            .then(res => res.json())
+            .then(data => {
+                geoJsonLayer = L.geoJSON(data, { style: { color: "var(--accent)", weight: 2, opacity: 0.8, fillOpacity: 0.1 } }).addTo(locationMap);
+                locationMap.flyToBounds(geoJsonLayer.getBounds(), { duration: 2.5, easeLinearity: 0.25 });
+            });
+    }
+
+    // Initialize map only when it becomes visible
+    const mapObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+            setupLocationMap();
+            mapObserver.disconnect(); // Stop observing once initialized
+        }
+    }, { threshold: 0.1 });
+
+    mapObserver.observe(document.getElementById('location-map'));
   </script>
 </body>
 </html>
