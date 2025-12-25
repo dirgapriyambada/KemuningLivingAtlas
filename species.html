@@ -1,269 +1,385 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" href="assets/wwf.ttf" as="font" type="font/ttf" crossorigin>
-    <link rel="preload" href="assets/Raleway-Medium.ttf" as="font" type="font/ttf" crossorigin>
-    <title>Species - Kemuning Forest Living Atlas</title>
+    <title>Species List - Kemuning Forest Living Atlas</title>
+    
     <style>
+        /* --- CSS RESET & VARIABLES --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        
         :root {
-            --bg: #1c2d15; --accent: #c4ff9d; --muted: #6b7a63; --panel: #23321f;
-        }
-        body {
-            font-family: 'Raleway', system-ui, Arial, sans-serif;
-            background: linear-gradient(rgba(28, 45, 21, 0.97), rgba(28, 45, 21, 0.99)), url('assets/bg.jpg') center/cover no-repeat fixed;
-            color: var(--accent); margin: 0;
-            padding-top: 80px;
-        }
-        @font-face {
-            font-family: 'WWF';
-            src: url('assets/wwf.ttf') format('truetype');
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'Raleway';
-            src: url('assets/Raleway-Medium.ttf') format('truetype');
-            font-display: swap;
-        }
-        nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 40px;background:rgba(12,18,10,0.98);z-index:1200}
-        .nav-logo img { height: 40px; transition: transform 0.2s; }
-        .nav-logo:hover img { transform: scale(1.1); }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a{color:var(--accent);text-decoration:none;font-family:'WWF', sans-serif; font-size: 20px; letter-spacing: 1px; padding:6px 14px;border-radius:20px;transition:all .22s}
-        .nav-links a.active, .nav-links a:hover{background:#314d25;color:#fff}
-
-        .container {
-            max-width: 960px; margin: 40px auto; padding: 20px;
+            --bg-dark: #1c2d15;
+            --text-main: #162405;
+            --accent: #c4ff9d;
+            --muted: #6b7a63;
         }
 
-        /* View for choosing taxa */
-        #taxa-selection-view {
-            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 40px; text-align: center;
+        /* --- FONT SETUP --- */
+        @font-face { font-family: 'SF Pro Display'; src: url('assets/SF-Pro-Text-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+        @font-face { font-family: 'SF Pro Text'; src: url('assets/SF-Pro-Text-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+        @font-face { font-family: 'SF Pro Text Medium'; src: url('assets/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 500; font-display: swap; }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            font-family: 'SF Pro Text', sans-serif;
+            background: transparent;
         }
+
+        /* BACKGROUND FIXED */
+        .bg-fixed {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('assets/bg.jpg') center/cover no-repeat;
+            z-index: -10;
+        }
+
+        /* NAVIGATION */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            display: flex; justify-content: center; align-items: center;
+            padding: 40px 0; z-index: 2200; 
+            background: transparent;
+        }
+        .nav-links { display: flex; gap: 40px; align-items: center; }
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.75); text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-decoration: none; font-family: 'SF Pro Text', sans-serif; font-weight: 500; font-size: 13px; 
+            letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s ease; cursor: pointer;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #fff; font-family: 'SF Pro Display', sans-serif; font-weight: 700; opacity: 1; transform: scale(1.02);
+        }
+        #nav-logout { color: #fff; }
+        #nav-logout:hover { opacity: 0.8; }
+
+        /* ========================================= */
+        /* --- VIEW 1: TAXA SELECTION CARDS --- */
+        /* ========================================= */
+        #view-selection {
+            position: relative; width: 100%; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.4s ease;
+        }
+        
+        #view-selection.hidden {
+            opacity: 0; pointer-events: none;
+        }
+
+        .page-title {
+            font-family: 'SF Pro Display', sans-serif; font-size: 48px; font-weight: 700;
+            color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            margin-top: 60px; margin-bottom: 40px; text-align: center;
+            opacity: 0; animation: fadeInUp 1s ease forwards;
+        }
+
+        .cards-container {
+            display: flex; gap: 30px; justify-content: center; align-items: center;
+        }
+
         .taxa-card {
-            background: var(--panel); padding: 30px 50px; border-radius: 15px;
-            cursor: pointer; transition: transform 0.3s, box-shadow 0.3s;
+            position: relative; width: 300px; height: 380px;
+            border-radius: 30px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0; animation: fadeInUp 1s ease forwards;
+            background-color: rgba(0,0,0,0.2);
         }
-        .taxa-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
-        }
-        .taxa-card img {
-            width: 128px; height: 128px; margin-bottom: 15px;
-        }
-        .taxa-card h2 {
-            font-family: 'WWF', sans-serif;
-            font-size: 32px; margin-bottom: 5px; letter-spacing: 1px;
-        }
-        .taxa-card .species-count {
-            font-size: 36px; font-weight: bold; color: var(--accent);
-        }
-        .taxa-cards-container { display: flex; gap: 60px; }
-        #neighbors-title {
-            font-family: 'WWF', sans-serif;
-            font-size: 48px;
-            opacity: 0;
-            animation: fadeIn 1.5s ease 0.5s forwards;
+        
+        .taxa-card:nth-child(1) { animation-delay: 0.2s; background: url('assets/explore-mammal.png') center / cover no-repeat; }
+        .taxa-card:nth-child(2) { animation-delay: 0.4s; background: url('assets/explore-bird.png') center / cover no-repeat; }
+        .taxa-card:nth-child(3) { animation-delay: 0.6s; background: url('assets/explore-herp.png') center / cover no-repeat; }
+
+        .taxa-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+
+        .card-label {
+            position: absolute; bottom: 25px; left: 20px; right: 20px;
+            background: #F4F1E8; border-radius: 20px;
+            padding: 12px 20px; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        /* View for species table */
-        #species-table-view {
-            display: none; /* Hidden by default */
-        }
-        #species-table-view h1 {
-            color: var(--accent); border-bottom: 2px solid var(--accent);
-            padding-bottom: 10px; margin-bottom: 20px;
-        }
-        .back-btn {
-            display: inline-block; margin-bottom: 20px; padding: 8px 16px;
-            background: var(--muted); color: var(--bg); text-decoration: none;
-            border-radius: 8px; font-weight: bold; transition: background 0.2s;
-        }
-        .back-btn:hover { background: var(--accent); }
+        .count-badge { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 24px; color: #2b3b2a; min-width: 40px; }
+        .taxa-name { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 18px; color: #162405; text-transform: uppercase; letter-spacing: 1px; }
 
-        table {
-            width: 100%; border-collapse: collapse; font-size: 14px;
-            background: var(--panel); border-radius: 8px; overflow: hidden;
+        /* ========================================= */
+        /* --- VIEW 2: SPECIES LIST (MODAL) --- */
+        /* ========================================= */
+        #view-list {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        th, td {
-            padding: 12px 15px; text-align: left; border-bottom: 1px solid #2f452a;
-        }
-        thead tr { background: #2a3f25; }
-        th { font-weight: bold; color: var(--accent); }
-        td { color: #dfeee0; }
-        tbody tr:nth-child(even) { background: rgba(0,0,0,0.1); }
-        td em { font-family: 'Times New Roman', Times, serif; }
 
-        @keyframes fadeIn { to { opacity: 1; } }
+        /* Judul Besar di atas Tabel (RATA KIRI & KECIL) */
+        #taxa-big-title {
+            width: 85%; max-width: 1200px; /* Samakan lebar dengan container tabel */
+            font-family: 'SF Pro Display', sans-serif; 
+            font-size: 48px; /* DIKECILKAN (dari 64px) */
+            font-weight: 700;
+            color: #fff; 
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            text-align: left; /* RATA KIRI */
+            margin-bottom: 20px; z-index: 102;
+            opacity: 0; transform: translateY(-20px);
+            transition: all 0.5s ease;
+        }
+        #view-list.active #taxa-big-title { opacity: 1; transform: translateY(0); transition-delay: 0.3s; }
+
+        /* Wrapper Putih (Tabel) */
+        .white-card-modal {
+            position: relative;
+            background: #FFFFFF;
+            width: 85%; max-width: 1200px; height: 70vh;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            
+            /* GENIE ANIMATION BASICS */
+            transform: scale(0); opacity: 0;
+            transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.5s ease;
+            transform-origin: center center;
+            
+            display: flex; flex-direction: column; overflow: hidden;
+            pointer-events: auto;
+        }
+
+        #view-list.active .white-card-modal {
+            transform: scale(1) !important;
+            opacity: 1;
+        }
+
+        /* Header Tabel (Sticky) */
+        .table-header {
+            padding: 30px 40px 15px 40px;
+            border-bottom: 1px solid #E0E0E0;
+            display: grid;
+            grid-template-columns: 1.5fr 1.5fr 1.5fr 1fr 0.8fr 0.8fr; 
+            gap: 20px;
+            font-family: 'SF Pro Text', sans-serif; font-weight: 700; font-size: 14px; color: #162405;
+        }
+
+        /* Body Tabel (Scrollable) */
+        .table-body {
+            flex: 1; overflow-y: auto; padding: 0 40px 40px 40px;
+        }
+        .table-row {
+            display: grid;
+            grid-template-columns: 1.5fr 1.5fr 1.5fr 1fr 0.8fr 0.8fr;
+            gap: 20px;
+            padding: 20px 0;
+            border-bottom: 1px solid #F0F0F0;
+            font-family: 'SF Pro Text', sans-serif; font-size: 14px; color: #333;
+            transition: background 0.2s;
+            cursor: default; /* KURSOR DEFAULT (Tidak bisa diklik) */
+        }
+        .table-row:hover { background: #FAFAFA; }
+        .table-row strong { font-weight: 600; color: #000; }
+        .table-row em { font-style: italic; color: #555; }
+
+        /* Close Button (DI LUAR TABEL - WHITE) */
+        .close-modal-btn {
+            position: fixed; /* Fixed relative to viewport */
+            top: 40px; right: 50px;
+            width: 40px; height: 40px;
+            border: 2px solid #fff; border-radius: 50%;
+            background: transparent; color: #fff;
+            font-size: 24px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; z-index: 3001; /* Di atas modal */
+            opacity: 0; pointer-events: none; /* Hidden by default */
+        }
+        .close-modal-btn:hover { background: rgba(255,255,255,0.2); }
+        
+        #view-list.active .close-modal-btn {
+            opacity: 1; pointer-events: auto; transition-delay: 0.5s;
+        }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Responsive */
+        @media(max-width: 1000px) {
+            .cards-container { flex-direction: column; }
+            .page-title { margin-top: 100px; font-size: 36px; }
+            .white-card-modal { width: 95%; height: 80vh; }
+            #taxa-big-title { width: 95%; font-size: 36px; text-align: center; } /* Mobile center title */
+            .table-header, .table-row { min-width: 800px; } 
+            .table-body { overflow-x: auto; }
+            .close-modal-btn { top: 20px; right: 20px; }
+        }
     </style>
 </head>
+
 <body>
 
+    <div class="bg-fixed"></div>
+
     <nav>
-        <a href="about.html" class="nav-logo">
-            <img src="assets/jawi.png" alt="Javan Wildlife Institute Logo">
-        </a>
         <div class="nav-links">
             <a href="index.html#home">HOME</a>
             <a href="index.html#location">LOCATION</a>
             <a href="explore.html">EXPLORE</a>
-            <a href="species.html" class="active">SPECIES</a>
-            <a href="about.html">ABOUT</a>
-            <span id="auth-link-container"></span>
+            <a href="#" class="active">SPECIES</a>
+            <a href="index.html#about">ABOUT</a>
+            <a href="#" id="nav-logout">LOGOUT</a>
         </div>
     </nav>
 
-    <div class="container">
-        <div id="taxa-selection-view">
-            <div class="taxa-cards-container">
-                <div class="taxa-card" data-taxa="Mamalia">
-                    <img src="assets/icon_mammals.png" alt="Mammals Icon">
-                    <h2>MAMMALS</h2>
-                    <div class="species-count" id="mammal-count">0 SPECIES</div>
-                </div>
-                <div class="taxa-card" data-taxa="Burung">
-                    <img src="assets/icon_birds.png" alt="Birds Icon">
-                    <h2>BIRDS</h2>
-                    <div class="species-count" id="bird-count">0 SPECIES</div>
+    <div id="view-selection">
+        <h1 class="page-title">Select Taxa to View List</h1>
+        
+        <div class="cards-container">
+            <div class="taxa-card" onclick="openList('Mamalia', this)">
+                <div class="card-label">
+                    <span class="count-badge" data-target="18">0</span>
+                    <span class="taxa-name">MAMMALS</span>
                 </div>
             </div>
-            <h2 id="neighbors-title">Our Wild Neighbors!</h2>
-        </div>
 
-        <div id="species-table-view">
-            <a href="#" class="back-btn" id="back-to-selection">&larr; Back</a>
-            <h1 id="table-title">Species List</h1>
-            <table id="species-table">
-                <thead>
-                    <tr>
-                        <th>Common Name</th>
-                        <th>Scientific Name</th>
-                        <th>IUCN Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be inserted here by JS -->
-                </tbody>
-            </table>
+            <div class="taxa-card" onclick="openList('Burung', this)">
+                <div class="card-label">
+                    <span class="count-badge" data-target="100">0</span>
+                    <span class="taxa-name">BIRDS</span>
+                </div>
+            </div>
+
+            <div class="taxa-card" onclick="openList('Herpetofauna', this)">
+                <div class="card-label">
+                    <span class="count-badge" data-target="22">0</span>
+                    <span class="taxa-name">HERPETOFAUNA</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-list">
+        <button class="close-modal-btn" onclick="closeList()">&times;</button>
+
+        <h2 id="taxa-big-title">Mammals</h2>
+        
+        <div class="white-card-modal" id="modal-card">
+            
+            <div class="table-header">
+                <div>Common Name</div>
+                <div>English Name</div>
+                <div>Scientific Name</div>
+                <div>Family</div>
+                <div>IUCN Status</div>
+                <div>Protection Status</div>
+            </div>
+            
+            <div class="table-body" id="table-content">
+                </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script>
-        // --- DOM Elements ---
-        const taxaSelectionView = document.getElementById('taxa-selection-view');
-        const speciesTableView = document.getElementById('species-table-view');
-        const backBtn = document.getElementById('back-to-selection');
-        const tableTitle = document.getElementById('table-title');
-        const tableBody = document.querySelector('#species-table tbody');
-        const mammalCountEl = document.getElementById('mammal-count');
-        const birdCountEl = document.getElementById('bird-count');
+        // --- 1. GATEKEEPER ---
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'index.html';
+        }
 
+        document.getElementById('nav-logout').addEventListener('click', (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem('isLoggedIn');
+            window.location.href = 'index.html';
+        });
+
+        // --- 2. DATA LOADING ---
         let biodiversityData = [];
 
-        // --- Animate Number Function ---
-        function setupNav() {
-            const authContainer = document.getElementById('auth-link-container');
-            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-
-            if (isLoggedIn) {
-                authContainer.innerHTML = '<a href="#" id="logout-btn">LOGOUT</a>';
-                const logoutBtn = document.getElementById('logout-btn');
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    sessionStorage.removeItem('isLoggedIn');
-                    window.location.href = 'login.html';
-                });
-            } else {
-                authContainer.innerHTML = '<a href="login.html">LOGIN</a>';
-            }
-        }
-
-
-        function animateCount(element, finalCount) {
-            let currentCount = 0;
-            const duration = 1000; // 1 second
-            const stepTime = Math.abs(Math.floor(duration / finalCount)) || 50;
-
-            const timer = setInterval(() => {
-                currentCount++;
-                element.textContent = `${currentCount} SPECIES`;
-                if (currentCount === finalCount) {
-                    clearInterval(timer);
-                }
-            }, stepTime);
-        }
-
-        // --- Data Loading ---
         document.addEventListener('DOMContentLoaded', () => {
-            setupNav();
+            document.querySelectorAll('.count-badge').forEach(el => {
+                const target = parseInt(el.getAttribute('data-target'));
+                animateValue(el, 0, target, 2000);
+            });
+
             Papa.parse('assets/biodiversity.csv', {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
+                download: true, header: true, skipEmptyLines: true,
                 complete: (results) => {
                     biodiversityData = results.data;
-                    processData(biodiversityData);
-                },
-                error: (err) => console.error("Error parsing CSV:", err)
+                }
             });
         });
 
-        function processData(data) {
-            const getUniqueSpeciesByTaxa = (taxa) => {
-                const speciesInTaxa = data.filter(item => item.Taxa === taxa);
-                const unique = [...new Map(speciesInTaxa.map(item => [item['Nama Ilmiah'], item])).values()];
-                return unique;
-            };
+        // --- 3. ANIMATION LOGIC (GENIE EFFECT) ---
+        const viewSelection = document.getElementById('view-selection');
+        const viewList = document.getElementById('view-list');
+        const modalCard = document.getElementById('modal-card');
+        const taxaBigTitle = document.getElementById('taxa-big-title');
+        const tableContent = document.getElementById('table-content');
 
-            const mammals = getUniqueSpeciesByTaxa('Mamalia');
-            const birds = getUniqueSpeciesByTaxa('Burung');
+        function openList(taxa, cardElement) {
+            taxaBigTitle.textContent = taxa === 'Mamalia' ? 'Mammals' : (taxa === 'Burung' ? 'Birds' : 'Herpetofauna');
+            populateTable(taxa);
 
-            animateCount(mammalCountEl, mammals.length);
-            animateCount(birdCountEl, birds.length);
-
-            document.querySelectorAll('.taxa-card').forEach(card => {
-                card.addEventListener('click', () => {
-                    const selectedTaxa = card.dataset.taxa;
-                    const dataToShow = selectedTaxa === 'Mamalia' ? mammals : birds;
-                    showTableView(selectedTaxa, dataToShow);
-                });
-            });
+            viewSelection.classList.add('hidden'); 
+            
+            viewList.classList.add('active');
+            viewList.style.pointerEvents = 'auto';
         }
 
-        function showTableView(taxa, data) {
-            tableTitle.textContent = `Species List: ${taxa === 'Mamalia' ? 'Mammals' : 'Birds'}`;
-            tableBody.innerHTML = ''; // Clear previous data
+        function closeList() {
+            viewList.classList.remove('active');
+            viewList.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                viewSelection.classList.remove('hidden');
+            }, 300);
+        }
 
-            data.sort((a, b) => a.Jenis.localeCompare(b.Jenis)); // Sort alphabetically
+        // --- 4. POPULATE TABLE ---
+        function populateTable(taxa) {
+            tableContent.innerHTML = '';
+            
+            // Filter data
+            const filtered = biodiversityData.filter(d => d.Taxa === taxa);
+            filtered.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
 
-            data.forEach(item => {
-                const row = document.createElement('tr');
-                row.style.cursor = 'pointer';
-                row.title = `Click to see locations for ${item.Jenis}`;
-                row.addEventListener('click', () => {
-                    window.location.href = `explore.html?species=${encodeURIComponent(item.Jenis)}`;
-                });
+            // Deduplicate
+            const uniqueSpecies = [...new Map(filtered.map(item => [item['Nama Ilmiah'], item])).values()];
+
+            uniqueSpecies.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'table-row';
+                
+                const commonName = item.Jenis || '-';
+                const englishName = item['Nama Inggris'] || '-'; 
+                const sciName = item['Nama Ilmiah'] || '-';
+                const family = item.Famili || '-';
+                const iucn = item['Status IUCN'] || '-';
+                const protection = item.Dilindungi || '-';
+
                 row.innerHTML = `
-                    <td>${item.Jenis || '-'}</td>
-                    <td><em>${item['Nama Ilmiah'] || '-'}</em></td>
-                    <td>${item['Status IUCN'] || '-'}</td>
+                    <div><strong>${commonName}</strong></div>
+                    <div>${englishName}</div>
+                    <div><em>${sciName}</em></div>
+                    <div>${family}</div>
+                    <div>${iucn}</div>
+                    <div>${protection}</div>
                 `;
-                tableBody.appendChild(row);
-            });
+                
+                // LOGIC CLICK KE MAP DIHAPUS SESUAI REQUEST
+                // row.addEventListener('click', ... ); 
 
-            taxaSelectionView.style.display = 'none';
-            speciesTableView.style.display = 'block';
+                tableContent.appendChild(row);
+            });
         }
 
-        backBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            taxaSelectionView.style.display = 'flex';
-            speciesTableView.style.display = 'none';
-        });
-
+        // --- UTILS ---
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
     </script>
-
 </body>
 </html>

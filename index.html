@@ -3,277 +3,455 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preload" href="assets/wwf.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="preload" href="assets/Raleway-Medium.ttf" as="font" type="font/ttf" crossorigin>
-  <title>Kemuning Forest Living Atlas</title>
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-
+  <title>NingAlas - Kemuning Forest Living Atlas</title>
+  
   <style>
-    * { box-sizing: border-box; margin:0; padding:0 }
-    :root{
-      --bg:#1c2d15; --accent:#c4ff9d; --muted:#6b7a63; --panel:#23321f; --highlight:#4aa3ff;
-    }
-    body{
-      font-family: 'Raleway', system-ui, Arial, sans-serif;
-      background:var(--bg);
-      color:var(--accent);
-      overflow-x:hidden;
-      scroll-behavior:smooth;
-    }
-    @font-face {
-        font-family: 'WWF';
-        src: url('assets/wwf.ttf') format('truetype');
-        font-display: swap;
-    }
-    @font-face {
-        font-family: 'Raleway';
-        src: url('assets/Raleway-Medium.ttf') format('truetype');
-        font-display: swap;
-    }
-    nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 40px;background:rgba(12,18,10,0.98);z-index:1200}
-    .nav-logo img { height: 40px; transition: transform 0.2s; }
-    .nav-logo:hover img { transform: scale(1.1); }
-    .nav-links { display: flex; gap: 20px; }
-    .nav-links a{color:var(--accent);text-decoration:none;font-family:'WWF', sans-serif; font-size: 20px; letter-spacing: 1px; padding:6px 14px;border-radius:20px;transition:all .22s}
-    .nav-links a.active, .nav-links a:hover{background:#314d25;color:#fff}
-
-    section{height:100vh;padding:84px 72px;display:flex;align-items:center}
-
-    /* HOME */
-    #home{background:url('assets/bg.jpg') center/cover no-repeat; flex-direction:row; justify-content:space-between; align-items:flex-end; text-align:left;}
-    .home-content-left { max-width: 50%; }
-    #home h1{font-family: 'WWF', sans-serif; font-size:8.5vw; line-height:1; margin-bottom:20px; opacity:0; transform:translateY(24px); animation:fadeInUp .9s ease forwards; text-align: left;}
-    #home p{
-        font-family: 'WWF', sans-serif;
-        max-width:450px; font-size:22px; letter-spacing: 0.5px; line-height: 1.4; text-align: justify;
-        opacity:0; transform:translateY(24px); animation:fadeInUp .9s ease .35s forwards;
-        margin-bottom: 0;
-    }
-    .explore-btn{display:inline-block; padding: 18px 40px; font-size: 18px; border: 2px solid var(--accent); color: var(--accent); text-decoration: none; border-radius: 8px; font-weight: 700; transition: all .3s; opacity:0; transform:translateY(24px); animation:fadeInUp .9s ease .6s forwards;}
-    .explore-btn:hover{background: var(--accent); color: var(--bg);}
+    /* --- CSS RESET & VARIABLES --- */
+    * { box-sizing: border-box; margin:0; padding:0; -webkit-font-smoothing: antialiased; }
     
-    /* LOCATION */
-    /* Set height to auto for sections that shouldn't be fullscreen */
-    #location, #explore, #species, #about { height: auto; min-height: 100vh; }
-    #location{background:linear-gradient(180deg, rgba(28,45,21,0.95) 0%, rgba(28,45,21,1) 100%);gap:40px;align-items:flex-start; padding-top: 120px; padding-bottom: 120px;}
-    #location .text{flex:1; font-family: 'Raleway', sans-serif;}
-    #location h1{font-family: 'WWF', sans-serif; font-size:54px;margin-bottom:8px;color:var(--accent)}
-    #location p{max-width:520px;color:var(--muted); text-align: justify; padding-right: 20px;}
-    #location .map-container{
-        flex: 1.2; /* Give map a bit more space */
-        height: 60vh; /* Define a good height */
-        border-radius:14px;
-        box-shadow:0 18px 40px rgba(0,0,0,.55);
-        overflow: hidden; /* Ensures border-radius is respected by map */
+    html { scroll-behavior: smooth; }
+
+    :root{ --bg-dark: #1c2d15; --text-main: #162405; --accent: #c4ff9d; }
+
+    /* --- FONT SETUP --- */
+    @font-face { font-family: 'SF Pro Display'; src: url('assets/SF-Pro-Text-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'SF Pro Text'; src: url('assets/SF-Pro-Text-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'SF Pro Text Medium'; src: url('assets/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 500; font-display: swap; }
+
+    body{
+      font-family: 'SF Pro Text', sans-serif;
+      background: var(--bg-dark);
+      width: 100%; min-height: 100vh;
+      overflow-x: hidden;
     }
-    #location-map { width: 100%; height: 100%; background: #000; }
-    #location.visible .map img{transform:scale(1);opacity:1}
 
-    /* Generic Scroll Animation */
-    .animate-on-scroll {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    /* BACKGROUND FIXED */
+    .bg-fixed {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: url('assets/bg.jpg') center/cover no-repeat;
+        z-index: -1;
+        transition: filter 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        filter: brightness(1);
     }
-    .visible .animate-on-scroll { opacity: 1; transform: translateY(0); }
+    .bg-fixed.dimmed { filter: brightness(0.4); }
 
-    @keyframes fadeInUp{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:none}}
+    /* --- NAVIGATION --- */
+    nav {
+        position: fixed; top: 0; left: 0; right: 0;
+        display: flex; justify-content: center; align-items: center;
+        padding: 40px 0; z-index: 2200; 
+        background: transparent; transition: padding 0.3s ease;
+    }
+    
+    .nav-links { display: flex; gap: 40px; align-items: center; }
+    .nav-links a {
+        color: rgba(255, 255, 255, 0.75); 
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        text-decoration: none;
+        font-family: 'SF Pro Text', sans-serif; font-weight: 500; font-size: 13px; 
+        letter-spacing: 1px; text-transform: uppercase;
+        transition: all 0.2s ease; cursor: pointer;
+    }
+    .nav-links a:hover, .nav-links a.active {
+        color: #fff; font-family: 'SF Pro Display', sans-serif; font-weight: 700; opacity: 1; transform: scale(1.02);
+    }
 
-    /* EXPLORE section: grid-based webGIS */
-    #explore{background:linear-gradient(180deg, rgba(20,30,18,1) 0%, rgba(16,24,14,1) 100%);flex-direction:column;padding:84px 48px;}
-    .explore-container{display:grid;grid-template-columns:320px 1fr 360px;gap:28px;align-items:start}
+    /* --- GLOBAL SECTION --- */
+    section {
+        position: relative; width: 100%; min-height: 100vh;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        padding: 20px;
+    }
 
-    /* left filter panel */
-    .panel{background:var(--panel);padding:18px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);color:#dfeee0; transition: all 0.3s ease; position: relative;}
-    .panel h3{font-size:14px;margin-bottom:10px}
-    .search{display:flex;gap:8px;margin-bottom:12px}
-    .search input{flex:1;padding:10px;border-radius:8px;border:0;background:#2b3b2a;color:var(--accent)}
-    .filters{display:flex;flex-direction:column;gap:8px}
-    .filters select, .filters input[type=month]{padding:8px;border-radius:8px;border:0;background:#2b3b2a;color:var(--accent)}
-    .toggle{display:flex;align-items:center;gap:8px}
-    #minimize-panel-btn { position: absolute; top: 10px; right: 10px; background: #2b3b2a; border: none; color: var(--accent); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 28px; text-align: center; }
-    .panel.minimized { width: 60px; height: 60px; padding: 0; display: flex; align-items: center; justify-content: center; }
-    .panel.minimized > *:not(#minimize-panel-btn) { display: none; }
-    .panel.minimized #minimize-panel-btn { position: static; }
+    /* --- SCROLL REVEAL --- */
+    .scroll-reveal { opacity: 0; transform: translateY(60px) scale(0.95); transition: all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .scroll-reveal.is-visible { opacity: 1; transform: translateY(0) scale(1); }
 
-    /* center map area (image with grid overlay) */
-    .map-wrap{position:relative;background:#0f170f;border-radius:12px;padding:12px; grid-column: 2 / 4; /* Make map take up center and right space */}
-    .map-canvas{width:100%;height:640px;border-radius:8px;overflow:hidden;position:relative;background:#000;}
-    /* Leaflet Tooltip/Label Styling */
-    .leaflet-tooltip.grid-label { background-color: transparent; border: none; box-shadow: none; color: #fff; font-weight: bold; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+    /* --- HOME --- */
+    .home-center-content { 
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 48px; width: 100%; max-width: 900px; margin-top: -40px;
+    }
+    #home h1 {
+        font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 7.5rem; line-height: 1;
+        color: var(--text-main); letter-spacing: -2px; margin: 0;
+        opacity: 0; transform: translateY(30px); animation: fadeInUp 1s cubic-bezier(0.2, 1, 0.3, 1) forwards; 
+    }
+    #home p {
+        font-family: 'SF Pro Text', sans-serif; font-size: 16px; color: var(--text-main); font-weight: 500; 
+        letter-spacing: 0.2px; max-width: 900px; text-align: center; line-height: 1.5; margin: 0;
+        opacity: 0; transform: translateY(30px); animation: fadeInUp 1s cubic-bezier(0.2, 1, 0.3, 1) 0.2s forwards;
+    }
+    
+    /* BUTTON EXPLORE */
+    .glass-btn {
+        display: flex; justify-content: center; align-items: center; width: 173px; height: 62px; border-radius: 99px;
+        background: rgba(87, 115, 78, 0.273);
+        box-shadow: inset 0px 0px 10px #ffffff4d, inset -1px -2px 2px #ffffff4d, inset 0px 4px 5px #ffffff4d;
+        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+        text-decoration: none; color: #FFFFFF; font-family: 'SF Pro Text', sans-serif; font-size: 20px; font-weight: 600; 
+        letter-spacing: 0.5px; line-height: 1; padding-bottom: 4px; transition: all 0.3s ease; 
+        border: none; outline: none; 
+        opacity: 0; transform: translateY(30px); animation: fadeInUp 1s cubic-bezier(0.2, 1, 0.3, 1) 0.4s forwards;
+        cursor: pointer;
+    }
+    .glass-btn:hover { background: rgba(87, 115, 78, 0.4); transform: scale(1.05); }
 
-    /* grid overlay: 8x6 for demo */
-    /* The old grid div is no longer needed as Leaflet handles it */
-    /* .grid{position:absolute;inset:30px;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(6,1fr);gap:6px}
-    .cell{background:rgba(50,70,46,0.28);border-radius:6px;border:1px solid rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;font-size:12px;color:#cfecc5;cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s}
-    .cell:hover{transform:translateY(-6px);box-shadow:0 8px 22px rgba(0,0,0,.5)}
-    .cell.highlight{outline:3px solid var(--highlight);box-shadow:0 10px 30px rgba(74,163,255,.18)}
-    .cell.found{background:rgba(76,139,89,0.32);}
+    .home-bottom-left { position: absolute; bottom: 48px; left: 48px; text-align: left; opacity: 0; animation: fadeIn 1s ease 0.7s forwards; }
+    .brand-text { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 14px; line-height: 1.3; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+    .home-bottom-right { position: absolute; bottom: 48px; right: 48px; text-align: right; opacity: 0; animation: fadeIn 1s ease 0.7s forwards; display: flex; flex-direction: column; align-items: flex-end; }
+    .developed-by { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.8); margin-bottom: 12px; display: block; }
+    .logo-container { display: flex; align-items: center; justify-content: flex-end; gap: 24px; }
+    .logo-container img { height: 36px; width: auto; opacity: 0.9; }
 
-    /* right detail panel */
-    .detail{display:flex;flex-direction:column;gap:12px}
-    .detail .card{background:var(--panel);padding:14px;border-radius:10px;color:#e9f7e6} /* This will now be inside the left panel */
-    .card h4{font-size:13px;margin-bottom:8px}
-    .species-list{max-height:260px;overflow:auto;padding-right:6px}
-    .species-item{padding:8px;border-radius:8px;background:rgba(0,0,0,0.06);margin-bottom:8px}
+    /* --- CARDS --- */
+    .location-card, .about-card {
+        width: 1084px; height: 787px; flex-shrink: 0;
+        background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.25);
+        box-shadow: 0px 4px 30px rgba(0, 0, 0, 0.3), inset 0px 4px 14.6px rgba(255, 255, 255, 0.1);
+        border-radius: 44px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+        overflow: hidden;
+    }
+    .location-card h2, .about-content-right h2 { font-family: 'SF Pro Display', sans-serif; font-size: 56px; font-weight: 700; margin-bottom: 24px; color: #FFFFFF; text-shadow: 0 2px 4px rgba(0,0,0,0.25); }
+    .location-card p, .about-content-right p { font-family: 'SF Pro Text', sans-serif; font-size: 16px; font-weight: 400; line-height: 1.6; color: rgba(255, 255, 255, 0.95); margin-bottom: 24px; max-width: 95%; }
+    
+    #location { padding-top: 100px; padding-bottom: 50px; }
+    .location-card { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 70px; }
+    .map-img { width: 100%; max-width: 900px; max-height: 380px; object-fit: contain; margin-bottom: 30px; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5)); }
+    .text-content { width: 100%; text-align: left; padding-left: 10px; }
 
-    /* table */
-    .table-wrap{margin-top:18px;background:var(--panel);border-radius:10px;padding:12px;color:#dfeee0}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    th,td{padding:8px;text-align:left;border-bottom:1px solid rgba(0,0,0,0.25)}
-    tbody tr:hover{background:rgba(255,255,255,0.02);cursor:pointer}
-    .tag{display:inline-block;padding:4px 8px;border-radius:999px;background:#324a35;font-size:12px}
+    #about { padding-top: 100px; padding-bottom: 50px; }
+    .about-card { display: flex; flex-direction: row; padding: 36px 50px; gap: 50px; }
+    .about-image-wrapper { width: 340px; height: 714px; flex-shrink: 0; }
+    .about-img-single { width: 100%; height: 100%; object-fit: cover; border-radius: 27px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .about-content-right { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 20px; position: relative; }
+    .about-footer { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding-bottom: 10px; }
+    .about-brand { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 14px; line-height: 1.3; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); text-transform: uppercase; text-align: left; }
 
-    /* responsive */
-    @media(max-width:1000px){
-      .explore-container{grid-template-columns:1fr; /* On smaller screens, stack everything */ }
-      .map-canvas{height:520px}
+    @keyframes fadeInUp{ 100%{ opacity: 1; transform: none; } }
+    @keyframes fadeIn{ 100%{ opacity: 1; } }
+
+    /* --- AUTH MODAL --- */
+    .auth-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.5); z-index: 3000;
+        display: flex; justify-content: center; align-items: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        backdrop-filter: blur(8px);
+    }
+    .auth-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .auth-card {
+        position: relative; width: 100%; max-width: 500px; padding: 50px 40px;
+        background: rgba(189, 189, 189, 0.1); border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1);
+        border-radius: 40px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        text-align: center; color: #fff;
+        transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .auth-overlay.active .auth-card { transform: scale(1); }
+
+    .close-auth {
+        position: absolute; top: 25px; right: 30px;
+        background: none; border: none; color: rgba(255,255,255,0.7);
+        font-size: 24px; cursor: pointer; transition: color 0.3s;
+        border: 2px solid rgba(255,255,255,0.5); border-radius: 50%;
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    }
+    .close-auth:hover { color: #fff; border-color: #fff; }
+
+    .auth-header { margin-bottom: 30px; }
+    .auth-header h3 { font-family: 'SF Pro Text', sans-serif; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.8); margin-bottom: 5px; }
+    .auth-form { display: flex; flex-direction: column; gap: 15px; }
+    
+    .input-wrapper { position: relative; width: 100%; display: flex; align-items: center; }
+    .input-icon { position: absolute; width: 20px; height: 20px; fill: rgba(255,255,255,0.6); pointer-events: none; }
+    .icon-left { left: 20px; }
+    .icon-right { right: 20px; pointer-events: auto; cursor: pointer; transition: fill 0.3s; }
+    .icon-right:hover { fill: #fff; }
+
+    .auth-input {
+        width: 100%; padding: 14px 50px;
+        border-radius: 50px; border: 1px solid rgba(255, 255, 255, 0.5);
+        background: transparent; color: #fff; font-family: 'SF Pro Text', sans-serif; font-size: 16px;
+        text-align: center; outline: none; transition: all 0.3s;
+    }
+    .auth-input::placeholder { color: rgba(255,255,255,0.6); }
+    .auth-input:focus { border-color: #fff; background: rgba(255,255,255,0.1); }
+
+    .auth-footer { margin-top: 20px; font-size: 13px; color: rgba(255,255,255,0.7); }
+    .auth-footer a { color: #fff; text-decoration: none; font-weight: 700; margin-left: 5px; cursor: pointer; }
+    
+    .auth-btn-submit {
+        margin-top: 10px; padding: 12px 40px; border-radius: 50px;
+        background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #fff; font-weight: 600; font-size: 16px;
+        cursor: pointer; transition: all 0.3s; width: fit-content; align-self: center;
+    }
+    .auth-btn-submit:hover { background: rgba(255, 255, 255, 0.4); transform: scale(1.05); }
+
+    #auth-message { margin-top: 15px; font-size: 14px; height: 20px; }
+    .msg-error { color: #ff8a8a; }
+    .msg-success { color: #c4ff9d; }
+    .hidden { display: none; }
+
+    @media(max-width: 1100px){
+         .location-card, .about-card { width: 95%; height: auto; padding: 40px 30px; }
+         .location-card h2, .about-content-right h2 { font-size: 32px; }
+         .map-img { max-height: 250px; }
+         #home h1 { font-size: 3.5rem; }
+         .about-card { flex-direction: column; }
+         .about-image-wrapper { width: 100%; height: auto; max-width: 340px; margin: 0 auto; }
+         .about-img-single { height: auto; aspect-ratio: 340/714; }
+         .about-content-right { padding-top: 30px; }
+         .home-bottom-left, .home-bottom-right { position: static; text-align: center; margin-bottom: 20px; }
+         .home-center-content { margin-top: 20px; }
+         .home-bottom-right { align-items: center; }
+         .logo-container { justify-content: center; }
+         .auth-card { width: 90%; padding: 40px 20px; }
     }
   </style>
 </head>
 <body>
 
-  <nav>
-    <a href="about.html" class="nav-logo">
-        <img src="assets/jawi.png" alt="Javan Wildlife Institute Logo">
-    </a>
-    <div class="nav-links">
-        <a href="#home" class="active">HOME</a>
-        <a href="#location">LOCATION</a>
-        <a href="explore.html">EXPLORE</a>
-        <a href="species.html">SPECIES</a>
-        <a href="about.html">ABOUT</a>
-        <span id="auth-link-container"></span>
+  <div class="bg-fixed"></div>
+
+  <div class="auth-overlay" id="auth-modal">
+    <div class="auth-card">
+        <button class="close-auth" id="close-auth-btn">&times;</button>
+        <div id="view-login">
+            <div class="auth-header"><h3>Login required to access data.</h3></div>
+            <form id="login-form" class="auth-form">
+                <div class="input-wrapper">
+                    <svg class="input-icon icon-left" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    <input type="text" id="login-username" class="auth-input" placeholder="username" required>
+                </div>
+                <div class="input-wrapper">
+                    <input type="password" id="login-password" class="auth-input" placeholder="password" required>
+                    <svg class="input-icon icon-right" id="toggle-password" viewBox="0 0 24 24">
+                        <path class="eye-open" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                        <path class="eye-closed hidden" d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                    </svg>
+                </div>
+                <div class="auth-footer">Don't have an account? <a id="btn-show-register">Request one</a></div>
+                <button type="submit" class="auth-btn-submit">Login</button>
+            </form>
+        </div>
+        <div id="view-register" class="hidden">
+            <div class="auth-header"><h3>Request Account Access</h3></div>
+            <form id="register-form" action="https://formspree.io/f/xovkdpvw" method="POST" class="auth-form">
+                <div class="input-wrapper">
+                    <svg class="input-icon icon-left" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    <input type="text" name="username" class="auth-input" placeholder="Choose a username" required>
+                </div>
+                <div class="input-wrapper">
+                    <svg class="input-icon icon-left" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    <input type="email" name="email" class="auth-input" placeholder="Your contact email" required>
+                </div>
+                <div class="auth-footer">Already have an account? <a id="btn-show-login">Login here</a></div>
+                <button type="submit" class="auth-btn-submit">Request</button>
+            </form>
+        </div>
+        <p id="auth-message"></p>
     </div>
+  </div>
+
+  <nav>
+    <div class="nav-links">
+        <a href="#home" class="active" id="nav-home">HOME</a>
+        <a href="#location" id="nav-location">LOCATION</a>
+        <a href="#" id="nav-explore">EXPLORE</a>
+        <a href="#about" id="nav-about">ABOUT</a>
+        </div>
   </nav>
 
   <section id="home">
-    <div class="home-content-left">
-        <h1>KEMUNING FOREST<br>LIVING ATLAS</h1>
-        <p>A living atlas of birds and mammals in a forest sustained by decades of coffee-based agroforestry.</p>
+    <div class="home-center-content">
+        <div class="text-group">
+            <h1>Alive in Data.</h1>
+            <p>A living atlas of wildlife in a forest sustained by decades of coffee-based agroforestry.</p>
+        </div>
+        <button id="btn-explore-main" class="glass-btn">Explore</button>
     </div>
-    <a href="explore.html" class="explore-btn">EXPLORE</a>
-  </section>
-
-  <section id="location" class="scroll-reveal">
-    <div class="text">
-      <h1 style="transition-delay: 0.1s;">KEMUNING FOREST</h1>
-      <p style="transition-delay: 0.2s;">
-        Kemuning Forest is one of the last tropical lowland forests in Central Java, home to incredible biodiversity and a community-driven coffee agroforestry tradition that has thrived for years. Managed together by PERUM Perhutani and local villagers, the forest shows how conservation and livelihoods can grow side by side.
-        <br><br>
-        Since 2016, the Javan Wildlife Institute (JAWI) has worked closely with the people of Kemuning—leading research, protecting wildlife, and empowering communities to create sustainable forest-based products. More than just a forest, Kemuning is a living proof that humans, nature, and wildlife can thrive in harmony when we care for each other.
-      </p>
-    </div>
-    <div class="map-container animate-on-scroll" style="transition-delay: 0.3s;">
-      <div id="location-map"></div>
+    <div class="home-bottom-left"><div class="brand-text">KEMUNING<br>LIVING<br>ATLAS</div></div>
+    <div class="home-bottom-right">
+        <span class="developed-by">Developed and powered by :</span>
+        <div class="logo-container">
+            <img src="assets/jawi.png" alt="JAWI Logo">
+            <img src="assets/ningalas.png" alt="NingAlas Logo">
+        </div>
     </div>
   </section>
 
-  <!-- Fullscreen Map Modal -->
-  <!-- This modal is no longer used by the new interactive map -->
-  <div id="map-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center; cursor:zoom-out; display: none !important;">
-    <span id="close-modal" style="position:absolute; top:20px; right:35px; font-size:40px; color:white; cursor:pointer; line-height:1;">&times;</span>
-    <img id="modal-img" src="" alt="Fullscreen Map" style="max-width:90%; max-height:90%; border-radius:10px;">
-  </div>
+  <section id="location">
+    <div class="location-card scroll-reveal">
+        <img src="assets/map.png" alt="Kemuning Map" class="map-img">
+        <div class="text-content">
+            <h2>Kemuning Forest</h2>
+            <p>Kemuning Forest is one of the last tropical lowland forests in Central Java, home to incredible biodiversity and a community-driven coffee agroforestry tradition that has thrived for years. Managed together by PERUM Perhutani and local villagers, the forest shows how conservation and livelihoods can grow side by side.</p>
+            <p>Since 2016, the Javan Wildlife Institute (JAWI) has worked closely with the people of Kemuning—leading research, protecting wildlife, and empowering communities to create sustainable forest-based products. More than just a forest, Kemuning is a living proof that humans, nature, and wildlife can thrive in harmony when we care for each other.</p>
+        </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="about-card scroll-reveal">
+        <div class="about-image-wrapper"><img src="assets/about.png" alt="About NingAlas" class="about-img-single"></div>
+        <div class="about-content-right">
+            <h2>About</h2>
+            <p>This platform is a biodiversity dashboard developed by <strong>Javan Wildlife Institute (JAWI)</strong> to visualize and explore wildlife data within the Kemuning Forest, Temanggung Regency, Central Java, Indonesia. The forest landscape has been shaped by decades of coffee-based agroforestry, providing important habitat for a wide range of wildlife.</p>
+            <p>All data presented in this dashboard are based on the biodiversity survey in the Kemuning Forest conducted by the <strong>JAWI</strong>. The platform is supported by <strong>NINGALAS SURVEY APP</strong>, a mobile field survey application built for offline wildlife data collection, enabling field observations to be recorded and synchronized directly to the dashboard.</p>
+            <div class="about-footer">
+                <div class="about-brand">KEMUNING<br>LIVING<br>ATLAS</div>
+                <div class="logo-container">
+                    <img src="assets/jawi.png" alt="JAWI Logo">
+                    <img src="assets/ningalas.png" alt="NingAlas Logo">
+                </div>
+            </div>
+        </div>
+    </div>
+  </section>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const authContainer = document.getElementById('auth-link-container');
-        const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-links a');
+        const bgFixed = document.querySelector('.bg-fixed');
+        const authModal = document.getElementById('auth-modal');
+        const btnExploreNav = document.getElementById('nav-explore');
+        const btnExploreMain = document.getElementById('btn-explore-main');
+        const closeAuthBtn = document.getElementById('close-auth-btn');
+        const loginForm = document.getElementById('login-form');
+        const authMessage = document.getElementById('auth-message');
+        const viewLogin = document.getElementById('view-login');
+        const viewRegister = document.getElementById('view-register');
+        const btnShowRegister = document.getElementById('btn-show-register');
+        const btnShowLogin = document.getElementById('btn-show-login');
+        const togglePassword = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('login-password');
 
-        if (isLoggedIn) {
-            authContainer.innerHTML = '<a href="#" id="logout-btn">LOGOUT</a>';
-            const logoutBtn = document.getElementById('logout-btn');
-            logoutBtn.addEventListener('click', (e) => {
+        // --- INJECT LOGOUT BUTTON IF LOGGED IN ---
+        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            const navContainer = document.querySelector('.nav-links');
+            const logoutLink = document.createElement('a');
+            logoutLink.href = '#';
+            logoutLink.textContent = 'LOGOUT';
+            logoutLink.style.color = 'rgba(255, 255, 255, 0.75)'; // Warna default
+            
+            logoutLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 sessionStorage.removeItem('isLoggedIn');
-                window.location.href = 'login.html';
+                window.location.reload(); // Refresh halaman untuk reset state
             });
-        } else {
-            authContainer.innerHTML = '<a href="login.html">LOGIN</a>';
+            
+            navContainer.appendChild(logoutLink);
         }
-        checkVisibility();
-    });
 
-    // NAV smooth & active
-    const navLinks = document.querySelectorAll('nav a, .explore-btn');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            // Check if it's an on-page anchor link
-            if (href.startsWith('#')) {
-                e.preventDefault(); // Prevent default jump
-                const targetId = href.substring(1);
-                const targetElement = document.getElementById(targetId);
-                if (targetElement) {
-                    targetElement.scrollIntoView({ behavior: 'smooth' });
-                    // Update active class on nav links
-                    document.querySelectorAll('.nav-links a').forEach(navLink => navLink.classList.remove('active'));
-                    document.querySelector(`.nav-links a[href="${href}"]`).classList.add('active');
+        // --- PASSWORD TOGGLE ---
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            const eyeOpen = togglePassword.querySelector('.eye-open');
+            const eyeClosed = togglePassword.querySelector('.eye-closed');
+            if (type === 'text') { eyeOpen.classList.add('hidden'); eyeClosed.classList.remove('hidden'); }
+            else { eyeOpen.classList.remove('hidden'); eyeClosed.classList.add('hidden'); }
+        });
+
+        // --- AUTH & NAV ---
+        function handleExploreClick(e) {
+            e.preventDefault();
+            if (sessionStorage.getItem('isLoggedIn') === 'true') window.location.href = 'explore.html';
+            else openAuthModal();
+        }
+
+        function openAuthModal() {
+            authModal.classList.add('active');
+            bgFixed.classList.add('dimmed');
+            viewLogin.classList.remove('hidden');
+            viewRegister.classList.add('hidden');
+            authMessage.textContent = '';
+        }
+
+        function closeAuthModal() {
+            authModal.classList.remove('active');
+            if (getCurrentSectionId() === 'home') bgFixed.classList.remove('dimmed');
+        }
+
+        btnExploreNav.addEventListener('click', handleExploreClick);
+        btnExploreMain.addEventListener('click', handleExploreClick);
+        closeAuthBtn.addEventListener('click', closeAuthModal);
+        btnShowRegister.addEventListener('click', () => { viewLogin.classList.add('hidden'); viewRegister.classList.remove('hidden'); authMessage.textContent = ''; });
+        btnShowLogin.addEventListener('click', () => { viewRegister.classList.add('hidden'); viewLogin.classList.remove('hidden'); authMessage.textContent = ''; });
+
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-username').value.trim();
+            const p = document.getElementById('login-password').value.trim();
+            authMessage.textContent = 'Verifying...'; authMessage.className = '';
+
+            try {
+                const response = await fetch('assets/users.json');
+                if (!response.ok) throw new Error('Network error');
+                const users = await response.json();
+                if (users[u] && users[u] === p) {
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    authMessage.textContent = 'Login successful! Redirecting...';
+                    authMessage.className = 'msg-success';
+                    setTimeout(() => { window.location.href = 'explore.html'; }, 1000);
+                } else {
+                    authMessage.textContent = 'Invalid username or password.';
+                    authMessage.className = 'msg-error';
                 }
+            } catch (error) {
+                console.error('Login error:', error);
+                authMessage.textContent = 'System error. Try again later.';
+                authMessage.className = 'msg-error';
             }
-            // For all other links (e.g., explore.html), let the browser handle it normally.
+        });
+
+        function getCurrentSectionId() {
+            let current = 'home';
+            sections.forEach(section => { if (scrollY >= section.offsetTop - 200) current = section.getAttribute('id'); });
+            return current;
+        }
+
+        const navObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    const activeId = entry.target.getAttribute('id');
+                    if (activeId !== 'explore') { 
+                        const activeLink = document.querySelector(`.nav-links a[href="#${activeId}"]`);
+                        if(activeLink) activeLink.classList.add('active');
+                    }
+                    if (!authModal.classList.contains('active')) {
+                        if (activeId === 'home') bgFixed.classList.remove('dimmed');
+                        else bgFixed.classList.add('dimmed');
+                    }
+                }
+            });
+        }, { threshold: 0.4 });
+        sections.forEach(section => navObserver.observe(section));
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('is-visible');
+                else entry.target.classList.remove('is-visible');
+            });
+        }, { threshold: 0.2, rootMargin: "0px 0px -50px 0px" });
+        document.querySelectorAll('.scroll-reveal').forEach(el => revealObserver.observe(el));
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href.startsWith('#')) {
+                    e.preventDefault();
+                    const target = document.getElementById(href.substring(1));
+                    if(target) target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
         });
     });
-
-    // Reveal sections on scroll
-    // We only animate location now
-    const sectionsToReveal = document.querySelectorAll('.scroll-reveal');
-    const checkVisibility = () => {
-      sectionsToReveal.forEach(section => {
-        const rect = section.getBoundingClientRect();
-        // Add .visible class when scrolling down
-        if (rect.top < window.innerHeight - 150 && rect.bottom >= 0) {
-          section.classList.add('visible');
-        } else {
-          // Remove .visible class when scrolling up (out of view)
-          section.classList.remove('visible');
-        }
-      });
-    };
-    window.addEventListener('scroll', checkVisibility);
-
-    // --- Location Map Setup ---
-    let locationMap;
-    let geoJsonLayer;
-    let mapInitialized = false;
-
-    function setupLocationMap() {
-        if (mapInitialized) return;
-        mapInitialized = true;
-
-        locationMap = L.map('location-map', {
-            attributionControl: false,
-            zoomControl: false,
-            scrollWheelZoom: false,
-            dragging: false,
-            touchZoom: false,
-            doubleClickZoom: false,
-        }).setView([-7.135, 110.105], 13);
-
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-        }).addTo(locationMap);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}').addTo(locationMap);
-
-        fetch('assets/kemuning.geojson')
-            .then(res => res.json())
-            .then(data => {
-                geoJsonLayer = L.geoJSON(data, { style: { color: "var(--accent)", weight: 2, opacity: 0.8, fillOpacity: 0.1 } }).addTo(locationMap);
-                locationMap.flyToBounds(geoJsonLayer.getBounds(), { duration: 2.5, easeLinearity: 0.25 });
-            });
-    }
-
-    // Initialize map only when it becomes visible
-    const mapObserver = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-            setupLocationMap();
-            mapObserver.disconnect(); // Stop observing once initialized
-        }
-    }, { threshold: 0.1 });
-
-    mapObserver.observe(document.getElementById('location-map'));
   </script>
 </body>
 </html>

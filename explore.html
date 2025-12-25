@@ -4,746 +4,414 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preload" href="assets/wwf.ttf" as="font" type="font/ttf" crossorigin>
-    <link rel="preload" href="assets/Raleway-Medium.ttf" as="font" type="font/ttf" crossorigin>
     <title>Explore - Kemuning Forest Living Atlas</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
     <style>
+        /* --- CSS SAMA PERSIS SEPERTI SEBELUMNYA --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        
         :root {
-            --bg: #1c2d15;
+            --bg-dark: #1c2d15;
+            --text-main: #162405;
             --accent: #c4ff9d;
             --muted: #6b7a63;
-            --panel: #23321f;
-            --highlight: #4aa3ff;
         }
+
+        /* --- FONT SETUP --- */
+        @font-face { font-family: 'SF Pro Display'; src: url('assets/SF-Pro-Text-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+        @font-face { font-family: 'SF Pro Text'; src: url('assets/SF-Pro-Text-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+        @font-face { font-family: 'SF Pro Text Medium'; src: url('assets/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 500; font-display: swap; }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden;
-            font-family: 'Raleway', system-ui, Arial, sans-serif;
-            background: var(--bg);
+            font-family: 'SF Pro Text', sans-serif;
+            background: transparent;
         }
 
-        @font-face {
-            font-family: 'WWF';
-            src: url('assets/wwf.ttf') format('truetype');
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'Raleway';
-            src: url('assets/Raleway-Medium.ttf') format('truetype');
-            font-display: swap;
+        /* BACKGROUND FIXED */
+        .bg-fixed {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('assets/bg.jpg') center/cover no-repeat;
+            z-index: -10;
         }
 
-        #map { width: 100%; height: 100%; z-index: 1; }
-        .leaflet-tooltip.grid-label {
-            background-color: transparent; border: none; box-shadow: none; color: #fff;
-            font-size: 14px; font-weight: bold; text-shadow: 0 0 4px #000, 0 0 4px #000;
-            transition: opacity 0.3s ease;
+        /* NAVIGATION */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            display: flex; justify-content: center; align-items: center;
+            padding: 40px 0; z-index: 2200; 
+            background: transparent;
         }
-        .leaflet-tooltip.label-hidden { opacity: 0 !important; }
+        .nav-links { display: flex; gap: 40px; align-items: center; }
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.75); text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-decoration: none; font-family: 'SF Pro Text', sans-serif; font-weight: 500; font-size: 13px; 
+            letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s ease; cursor: pointer;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #fff; font-family: 'SF Pro Display', sans-serif; font-weight: 700; opacity: 1; transform: scale(1.02);
+        }
+        #nav-logout { color: #fff; }
+        #nav-logout:hover { opacity: 0.8; }
 
-        /* Header Nav */
-        nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 40px;background:rgba(12,18,10,0.98);z-index:1200}
-        .nav-logo img { height: 40px; transition: transform 0.2s; }
-        .nav-logo:hover img { transform: scale(1.1); }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a{color:var(--accent);text-decoration:none;font-family:'WWF', sans-serif; font-size: 20px; letter-spacing: 1px; padding:6px 14px;border-radius:20px;transition:all .22s}
-        .nav-links a.active, .nav-links a:hover{background:#314d25;color:#fff}
-
-        .ui-container {
-            position: absolute; top: 80px; left: 20px; z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 20px;
+        /* ========================================= */
+        /* --- VIEW 1: LANDING CARDS (TAXA) --- */
+        /* ========================================= */
+        #view-selection {
+            position: relative; width: 100%; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.4s ease;
+        }
+        
+        #view-selection.hidden {
+            opacity: 0; pointer-events: none;
         }
 
+        .page-title {
+            font-family: 'SF Pro Display', sans-serif; font-size: 48px; font-weight: 700;
+            color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            margin-top: 60px; margin-bottom: 40px; text-align: center;
+            opacity: 0; animation: fadeInUp 1s ease forwards;
+        }
 
-        /* Search Panel (Overlay) */
-        .search-panel {
-            position: relative;
-            background: var(--panel); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
-            color: #dfeee0; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            overflow: hidden;
+        .cards-container {
+            display: flex; gap: 30px; justify-content: center; align-items: center;
+            margin-bottom: 40px;
         }
-        .search-panel.minimized {
-            width: 50px; height: 50px; padding: 0; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .search-panel:not(.minimized) { width: 340px; padding: 18px; }
-        .search-panel-content { display: none; }
-        .search-panel:not(.minimized) .search-panel-content { display: block; }
 
-        #explore-title {
-            font-family: 'WWF', sans-serif;
-            font-size: 28px;
-            color: var(--accent);
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            white-space: nowrap; /* Prevent text from wrapping */
+        .taxa-card {
+            position: relative; width: 300px; height: 380px;
+            border-radius: 30px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0; animation: fadeInUp 1s ease forwards;
+            background-color: rgba(0,0,0,0.2);
         }
-        .search-panel:not(.minimized) ~ #explore-title { opacity: 0; transform: translateX(-20px); pointer-events: none; }
+        
+        .taxa-card:nth-child(1) { animation-delay: 0.2s; background: url('assets/explore-mammal.png') center / cover no-repeat; }
+        .taxa-card:nth-child(2) { animation-delay: 0.4s; background: url('assets/explore-bird.png') center / cover no-repeat; }
+        .taxa-card:nth-child(3) { animation-delay: 0.6s; background: url('assets/explore-herp.png') center / cover no-repeat; }
 
-        /* Search Input & Autocomplete */
-        .search-container { position: relative; }
-        .search { display: flex; gap: 8px; margin-bottom: 12px; }
-        .search input { flex: 1; padding: 10px; border-radius: 8px; border: 0; background: #2b3b2a; color: var(--accent); font-family: 'Raleway', sans-serif; }
-        .search button { border-radius: 8px; border: 0; cursor: pointer; background-color: transparent; background-repeat: no-repeat; background-position: center; text-indent: -9999px; overflow: hidden; }
-        .search button.icon-btn { background-color: #4a5a47; width: 38px; flex-shrink: 0; background-size: 20px; }
-        #searchBtn { background-color: var(--highlight); background-image: url('assets/search.png'); background-size: 20px; width: 60px; }
-        .search button.toggle-btn { transition: transform 0.3s; }
-        .search-panel.minimized .search button.toggle-btn { transform: rotate(180deg); }
+        .taxa-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
 
+        .card-label {
+            position: absolute; bottom: 25px; left: 20px; right: 20px;
+            background: #F4F1E8; border-radius: 20px;
+            padding: 12px 20px; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
 
-        #autocomplete-list {
-            position: absolute; top: 100%; left: 0; right: 0; background: #2b3b2a;
-            border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1001;
-        }
-        #autocomplete-list div { padding: 10px; color: var(--accent); cursor: pointer; }
-        #autocomplete-list div:hover { background: #3a4c38; }
+        .count-badge { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 24px; color: #2b3b2a; min-width: 40px; }
+        .taxa-name { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 18px; color: #162405; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Button Group Filters */
-        .filter-group { margin-bottom: 12px; }
-        .filter-group label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
-        .button-group { display: flex; flex-wrap: wrap; gap: 6px; }
-        .button-group button {
-            padding: 5px 10px; border: 1px solid #4a5a47; background: transparent;
-            color: var(--muted); border-radius: 16px; cursor: pointer; transition: all 0.2s;
-        }
-        .button-group button.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: bold; }
-
-        /* Right Detail Panel */
-        .detail-panel {
-            position: absolute; top: 0; right: 0; bottom: 0; width: 380px;
-            background: rgba(22, 33, 19, 0.95); backdrop-filter: blur(10px);
-            z-index: 1001; padding: 80px 25px 25px 25px;
-            transform: translateX(100%); transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: -10px 0 30px rgba(0,0,0,0.4);
-        }
-        .detail-panel.visible { transform: translateX(0); }
-        .detail-panel .close-btn {
-            position: absolute; top: 20px; right: 20px; background: none; border: none;
-            cursor: pointer; line-height: 1; top: 15px;
-            width: 32px; height: 32px; background-image: url('assets/back.png'); background-size: contain; background-repeat: no-repeat;
-            font-size: 0; /* Hide text */
-        }
-        .detail-panel h3 { color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 15px; }
-        .detail-panel #detail-info { color: var(--accent); font-weight: bold; }
-        .detail-panel h4 { color: var(--muted); margin-top: 15px; margin-bottom: 10px; }
-        .species-list { max-height: calc(100vh - 200px); overflow-y: auto; }
-        .species-item { padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.2); margin-bottom: 8px; color: #e9f7e6; }
-        .species-item strong { color: var(--accent); }
-        .detail-panel .taxa-filter-buttons {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .species-item .iucn-status-filter {
+        .glass-btn {
+            padding: 14px 50px; border-radius: 50px;
+            background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: none; outline: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: #fff; font-family: 'SF Pro Text', sans-serif; font-size: 18px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease;
+            opacity: 0; animation: fadeInUp 1s cubic-bezier(0.2, 1, 0.3, 1) 0.8s forwards;
             text-decoration: none;
-            transition: opacity 0.2s;
+            display: inline-block;
         }
-        .species-item .iucn-status-filter:hover {
-            opacity: 0.8;
-            text-decoration: underline;
+        .glass-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+
+        /* ========================================= */
+        /* --- VIEW 2: SPECIES LIST (MODAL) --- */
+        /* ========================================= */
+        #view-list {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 3000; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s ease;
         }
-        .detail-panel .taxa-filter-buttons {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .detail-panel .taxa-filter-buttons button {
-            flex: 1; padding: 8px; border: 1px solid #4a5a47; background: transparent;
-            color: var(--muted); border-radius: 8px; cursor: pointer; transition: all 0.2s;
-        }
-        .detail-panel .taxa-filter-buttons button.active {
-            background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: bold;
+        #view-list.active { opacity: 1; pointer-events: auto; }
+
+        /* LIST WRAPPER */
+        .list-wrapper {
+            position: relative;
+            width: 85%; max-width: 1200px;
+            display: flex; flex-direction: column;
         }
 
-        /* Filter Status Display */
-        #filter-status-display {
-            position: absolute;
-            bottom: 25px;
-            left: 25px;
-            z-index: 1000;
-            font-family: 'WWF', sans-serif;
-            font-size: 28px;
-            color: var(--accent);
-            text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+        /* Judul Besar di atas Tabel */
+        #taxa-big-title {
+            width: 100%;
+            font-family: 'SF Pro Display', sans-serif; 
+            font-size: 48px; 
+            font-weight: 700;
+            color: #fff; 
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            text-align: left; 
+            margin-bottom: 20px; z-index: 102;
+            opacity: 0; transform: translateY(-20px);
+            transition: all 0.5s ease;
         }
-        /* Map Controls */
-        .leaflet-control-container .leaflet-top.leaflet-right { margin-top: 80px; }
-        .leaflet-bar a, .leaflet-bar a:hover {
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        .leaflet-control-zoom-in, .leaflet-control-zoom-out {
-            font-size: 0 !important; /* Hide default '+' and '-' */
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: 22px;
-        }
-        .leaflet-control-zoom-in { background-image: url('assets/zoomin.png') !important; }
-        .leaflet-control-zoom-out { background-image: url('assets/zoomout.png') !important; }
-        .reset-map-btn { background-image: url('assets/refresh.png'); background-size: 22px; background-repeat: no-repeat; background-position: center; font-size: 0 !important; }
+        #view-list.active #taxa-big-title { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
 
+        /* Tombol Close */
+        .close-modal-btn {
+            position: absolute; top: 10px; right: 0; 
+            width: 32px; height: 32px; 
+            border: 1.5px solid #fff; border-radius: 50%;
+            background: transparent; color: #fff;
+            font-size: 18px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; z-index: 103;
+        }
+        .close-modal-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
 
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            nav {
-                gap: 8px;
-                justify-content: space-around;
-            }
-            nav a {
-                padding: 6px 8px;
-                font-size: 12px;
-            }
-            .search-panel {
-                top: 65px; /* Adjust for smaller nav */
-                left: 10px;
-            }
-            .search-panel:not(.minimized) {
-                width: calc(100% - 20px); /* Full width with some margin */
-            }
-            .detail-panel {
-                width: 100%;
-                padding-top: 65px;
-            }
-            .detail-panel .close-btn {
-                top: 10px;
-            }
+        /* Wrapper Putih */
+        .white-card-modal {
+            position: relative;
+            background: #FFFFFF;
+            width: 100%; height: 70vh;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            /* GENIE ANIMATION */
+            transform: scale(0); opacity: 0;
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s ease;
+            transform-origin: center center;
+            display: flex; flex-direction: column; overflow: hidden;
+            pointer-events: auto;
+        }
+
+        #view-list.active .white-card-modal { transform: scale(1) !important; opacity: 1; }
+
+        /* Tabel */
+        .table-header {
+            padding: 30px 40px 15px 40px;
+            border-bottom: 1px solid #E0E0E0;
+            display: grid;
+            grid-template-columns: 1.5fr 1.5fr 1.5fr 1fr 0.8fr 0.8fr; 
+            gap: 20px;
+            font-family: 'SF Pro Text', sans-serif; font-weight: 700; font-size: 14px; color: #162405;
+        }
+        .table-body { flex: 1; overflow-y: auto; padding: 0 40px 40px 40px; }
+        .table-row {
+            display: grid; grid-template-columns: 1.5fr 1.5fr 1.5fr 1fr 0.8fr 0.8fr;
+            gap: 20px; padding: 20px 0; border-bottom: 1px solid #F0F0F0;
+            font-family: 'SF Pro Text', sans-serif; font-size: 14px; color: #333;
+            transition: background 0.2s; cursor: default;
+        }
+        .table-row:hover { background: #FAFAFA; }
+        .table-row strong { font-weight: 600; color: #000; }
+        .table-row em { font-style: italic; color: #555; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media(max-width: 1000px) {
+            .cards-container { flex-direction: column; }
+            .page-title { margin-top: 100px; font-size: 36px; }
+            .white-card-modal { height: 80vh; }
+            .table-header, .table-row { min-width: 800px; } 
+            .table-body { overflow-x: auto; }
         }
     </style>
 </head>
 
 <body>
 
-    <script>
-        // Gatekeeper script: Check if the user is logged in.
-        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-            window.location.href = 'login.html';
-        }
-    </script>
-
-    <div id="map"></div>
-
-    <div id="filter-status-display"></div>
-
-    <div class="ui-container">
-        <div class="search-panel minimized" id="search-panel">
-            <button class="toggle-btn" id="toggle-search-panel" title="Open Panel" style="width: 50px; height: 50px; background-image: url('assets/search.png'); background-size: 24px; background-color: transparent; border: none; cursor: pointer; text-indent: -9999px; background-repeat: no-repeat; background-position: center;"></button>
-            <div class="search-panel-content">
-            <div class="search-container">
-                <div class="search">
-                    <input id="searchSpecies" placeholder="Search species..." autocomplete="off" lang="id" />
-                    <button id="searchBtn" title="Search">Search</button>
-                    <button id="resetBtn" class="icon-btn" title="Reset Filter">&#8634;</button>
-                    <button id="toggle-search-btn-inner" class="icon-btn toggle-btn" title="Close Panel">&#x2190;</button>
-                </div>
-                <div id="autocomplete-list"></div>
-            </div>
-            <div class="filter-group">
-                <label>Taxa</label>
-                <div class="button-group" id="filterTaxa"></div>
-            </div>
-            <div class="filter-group">
-                <label>Year</label>
-                <div class="button-group" id="filterYear"></div>
-            </div>
-            <div class="filter-group">
-                <label>Month</label>
-                <div class="button-group" id="filterMonth"></div>
-            </div>
-        </div>
-    </div>
-        <h2 id="explore-title">Explore Our Biodiversity!</h2>
-    </div>
-
-    <div class="detail-panel" id="detail-panel">
-        <button class="close-btn" id="close-detail-panel">&times;</button>
-        <h3 id="detail-plot-name">Plot Details</h3>
-        <div id="detail-info"></div>
-        <div class="taxa-filter-buttons" id="detail-taxa-filter">
-            <button data-taxa="All" class="active">All</button>
-            <button data-taxa="Mamalia">Mammals</button>
-            <button data-taxa="Burung">Birds</button>
-        </div>
-        <div class="species-list" id="species-list" lang="id"></div>
-    </div>
+    <div class="bg-fixed"></div>
 
     <nav>
-        <a href="about.html" class="nav-logo">
-            <img src="assets/jawi.png" alt="Javan Wildlife Institute Logo">
-        </a>
         <div class="nav-links">
             <a href="index.html#home">HOME</a>
             <a href="index.html#location">LOCATION</a>
-            <a href="explore.html" class="active">EXPLORE</a>
-            <a href="species.html">SPECIES</a>
-            <a href="about.html">ABOUT</a>
-            <span id="auth-link-container"></span>
+            <a href="#" class="active">EXPLORE</a>
+            <a href="index.html#about">ABOUT</a>
+            <a href="#" id="nav-logout">LOGOUT</a>
         </div>
     </nav>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <div id="view-selection">
+        <h1 class="page-title">Our Wild Neighbors!</h1>
+        
+        <div class="cards-container">
+            <div class="taxa-card" onclick="openList('Mamalia', this)">
+                <div class="card-label">
+                    <span id="cnt-Mamalia" class="count-badge">0</span>
+                    <span class="taxa-name">MAMMALS</span>
+                </div>
+            </div>
+            <div class="taxa-card" onclick="openList('Burung', this)">
+                <div class="card-label">
+                    <span id="cnt-Burung" class="count-badge">0</span>
+                    <span class="taxa-name">BIRDS</span>
+                </div>
+            </div>
+            <div class="taxa-card" onclick="openList('Herpetofauna', this)">
+                <div class="card-label">
+                    <span id="cnt-Herpetofauna" class="count-badge">0</span>
+                    <span class="taxa-name">HERPETOFAUNA</span>
+                </div>
+            </div>
+        </div>
 
-    <script>
-        // --- DOM ELEMENTS ---
-        const searchPanel = document.getElementById('search-panel');
-        const toggleSearchBtn = document.getElementById('toggle-search-panel');
-        const detailPanel = document.getElementById('detail-panel');
-        const closeDetailBtn = document.getElementById('close-detail-panel');
-        const detailPlotName = document.getElementById('detail-plot-name');
-        const detailInfo = document.getElementById('detail-info');
-        const speciesListEl = document.getElementById('species-list');
-        const searchInput = document.getElementById('searchSpecies');
-        const autocompleteList = document.getElementById('autocomplete-list');
-        const searchBtn = document.getElementById('searchBtn');
-        const filterStatusDisplay = document.getElementById('filter-status-display');
-        const resetBtn = document.getElementById('resetBtn');
-        const toggleSearchBtnInner = document.getElementById('toggle-search-btn-inner');
+        <a href="map.html" class="glass-btn">Explore Map</a>
+    </div>
 
-        // --- GLOBAL STATE ---
-        let biodiversityData = [];
-        let gridLayers = {};
-        let map;
-        let initialBounds;
-        let uniqueSpecies = [];
-
-        // --- LEAFLET MAP SETUP ---
-        function initializeMap() {
-            map = L.map('map', { attributionControl: false, zoomControl: false }).setView([-7.135, 110.105], 15);
-            L.control.zoom({ position: 'topright' }).addTo(map); // Moved to top-right
-            // Add imagery basemap
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri'
-            }).addTo(map);
-            // Add labels layer on top
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}').addTo(map);
-
-            L.control.attribution({ prefix: false }).addTo(map);
-
-            // Custom Reset View Control
-            L.Control.ResetView = L.Control.extend({
-                onAdd: function(map) {
-                    const btn = L.DomUtil.create('a', 'leaflet-bar-part leaflet-bar-part-single reset-map-btn');
-                    btn.innerHTML = 'Reset'; // Fallback text, will be hidden by CSS
-                    btn.href = '#';
-                    btn.title = 'Reset View';
-                    btn.role = 'button';
-                    L.DomEvent.on(btn, 'click', L.DomEvent.stop).on(btn, 'click', resetMapState);
-                    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                    container.appendChild(btn);
-                    return container;
-                }
-            });
-            L.control.resetView = (opts) => new L.Control.ResetView(opts);
-            L.control.resetView({ position: 'topright' }).addTo(map);
-
-            loadGeoJSON();
-
-            map.on('zoomend', toggleGridLabels);
-            map.on('click', () => {
-                filterStatusDisplay.textContent = ''; // Clear species filter text
-                hideDetailPanel();
-            });
-        }
-
-        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#c4ff9d';
-        const highlightColor = getComputedStyle(document.documentElement).getPropertyValue('--highlight').trim();
-
-        function loadGeoJSON() {
-            fetch('assets/grids.geojson')
-                .then(res => res.json())
-                .then(data => {
-                    const gridLayer = L.geoJSON(data, {
-                        style: getBaseStyle,
-                        onEachFeature: (feature, layer) => {
-                            const plotName = feature.properties.Name;
-                            gridLayers[plotName] = layer;
-                            layer.bindTooltip(plotName, { permanent: true, direction: 'center', className: 'grid-label' });
-                            layer.on({
-                                click: (e) => {
-                                    L.DomEvent.stopPropagation(e); // Prevent click from reaching the map
-                                    selectPlot(plotName);
-                                },
-                            });
-                        }
-                    }).addTo(map);
-                    initialBounds = gridLayer.getBounds();
-                    map.flyToBounds(initialBounds, { duration: 2, easeLinearity: 0.25 });
-                })
-                .catch(error => console.error('Error loading GeoJSON:', error));
-        }
-
-        function getBaseStyle() {
-            return { color: accentColor, weight: 1, opacity: 0.6, fillColor: accentColor, fillOpacity: 0.1 };
-        }
-
-        function getHighlightStyle() {
-            return { fillOpacity: 0.5, weight: 3, color: accentColor };
-        }
-
-        function getSelectedStyle() {
-            return { weight: 3, color: highlightColor, fillOpacity: 0.3 };
-        }
-
-        function toggleGridLabels() {
-            const zoomLevel = map.getZoom();
-            const showLabels = zoomLevel >= (map.getBoundsZoom(initialBounds) - 1); // Show labels at default zoom or closer
-            Object.values(gridLayers).forEach(layer => {
-                const tooltip = layer.getTooltip();
-                if (tooltip) {
-                    tooltip.getElement().classList.toggle('label-hidden', !showLabels);
-                }
-            });
-        }
-
-        // --- DATA LOADING & PROCESSING ---
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeMap();
-            Papa.parse('assets/biodiversity.csv', {
-                download: true, header: true, skipEmptyLines: true,
-                complete: (results) => {
-                    biodiversityData = results.data;
-                    uniqueSpecies = [...new Set(biodiversityData.map(item => item.Jenis).concat(biodiversityData.map(item => item["Nama Ilmiah"])))].filter(Boolean).sort();
-                    populateFilters(biodiversityData);
-
-                    // Check for URL parameters to auto-filter
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const speciesToFilter = urlParams.get('species');
-                    if (speciesToFilter) {
-                        filterBySpecies(speciesToFilter);
-                    }
-                },
-                error: (err) => console.error("Error parsing CSV:", err)
-            });
-        });
-
-        // Prevent map click when interacting with panels
-        document.addEventListener('DOMContentLoaded', () => {
-            L.DomEvent.disableClickPropagation(searchPanel);
-            L.DomEvent.disableClickPropagation(detailPanel);
-        });
-
-        // --- UI INTERACTIONS ---
-
-        // Search Panel Toggle
-        const togglePanel = () => {
-            searchPanel.classList.toggle('minimized');
-            const isMinimized = searchPanel.classList.contains('minimized');
-            toggleSearchBtn.style.backgroundImage = isMinimized ? `url('assets/search.png')` : `url('assets/back.png')`;
-            toggleSearchBtn.title = isMinimized ? 'Open Panel' : 'Close Panel';
-            // The inner button always shows the back icon
-        };
-
-        // Initial setup for icons
-        document.getElementById('resetBtn').style.backgroundImage = `url('assets/refresh.png')`;
-        document.getElementById('toggle-search-btn-inner').style.backgroundImage = `url('assets/back.png')`;
-
-        toggleSearchBtn.addEventListener('click', togglePanel);
-        toggleSearchBtnInner.addEventListener('click', togglePanel);
-
-        if (searchPanel.classList.contains('minimized')) {
-             searchPanel.addEventListener('click', (e) => {
-                // Allow clicking the minimized panel itself to expand it
-                if(e.target === searchPanel) {
-                    togglePanel();
-                }
-             });
-        }
-
-        // Detail Panel
-        function selectPlot(plotName) {
-            currentSelectedPlot = plotName;
-            resetGridStyles();
-            const targetLayer = gridLayers[plotName];
-            if (targetLayer) {
-                targetLayer.setStyle(getSelectedStyle());
-                targetLayer.bringToFront();
-            }
+    <div id="view-list">
+        <div class="list-wrapper">
+            <h2 id="taxa-big-title">Mammals</h2>
+            <button class="close-modal-btn" onclick="closeList()">&times;</button>
             
-            // Reset detail taxa filter to 'All'
-            document.querySelectorAll('#detail-taxa-filter button').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.taxa === 'All');
-            });
+            <div class="white-card-modal" id="modal-card">
+                <div class="table-header">
+                    <div>Common Name</div>
+                    <div>English Name</div>
+                    <div>Scientific Name</div>
+                    <div>Family</div>
+                    <div>IUCN Status</div>
+                    <div>Protection Status</div>
+                </div>
+                <div class="table-body" id="table-content">
+                    </div>
+            </div>
+        </div>
+    </div>
 
-            renderDetailPanel(plotName);
-            detailPanel.classList.add('visible');
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // --- 1. GATEKEEPER ---
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'index.html';
         }
 
-        // Helper object to format IUCN status. Now handles both full names and abbreviations.
-        const iucnStatusInfo = Object.fromEntries(Object.entries({
-            // Full Name keys
-            'Extinct': { abbr: 'EX', color: '#a83232' }, 'Extinct in the Wild': { abbr: 'EW', color: '#c73c3c' },
-            'Critically Endangered': { abbr: 'CR', color: '#e04b4b' }, 'Endangered': { abbr: 'EN', color: '#f0742f' },
-            'Vulnerable': { abbr: 'VU', color: '#f5a142' }, 'Near Threatened': { abbr: 'NT', color: '#f5d142' },
-            'Least Concern': { abbr: 'LC', color: '#c4ff9d' }, 'Data Deficient': { abbr: 'DD', color: '#A9A9A9' },
-            'Not Evaluated': { abbr: 'NE', color: '#A9A9A9' },
-            // Abbreviation keys (for robustness)
-            'EX': { abbr: 'EX', color: '#a83232' }, 'EW': { abbr: 'EW', color: '#c73c3c' },
-            'CR': { abbr: 'CR', color: '#e04b4b' }, 'EN': { abbr: 'EN', color: '#f0742f' },
-            'VU': { abbr: 'VU', color: '#f5a142' }, 'NT': { abbr: 'NT', color: '#f5d142' },
-            'LC': { abbr: 'LC', color: '#c4ff9d' }, 'DD': { abbr: 'DD', color: '#A9A9A9' },
-            'NE': { abbr: 'NE', color: '#A9A9A9' }
-        }).map(([key, value]) => [key.toLowerCase(), value]));
+        document.getElementById('nav-logout').addEventListener('click', (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem('isLoggedIn');
+            window.location.href = 'index.html';
+        });
 
-        function renderDetailPanel(plotName, taxaFilter = 'All') {
-            const records = biodiversityData.filter(d => d.Plot === plotName);
-            detailPlotName.textContent = `Plot Details: ${plotName}`;
-
-            if (records.length === 0) {
-                detailInfo.innerHTML = `<em>No data found.</em>`;
-                speciesListEl.innerHTML = '-';
-            } else {
-                const mammalCount = records.filter(r => r.Taxa === 'Mamalia').length;
-                const birdCount = records.filter(r => r.Taxa === 'Burung').length;
-                detailInfo.innerHTML = `Observations: ${records.length}<br><small style="font-weight:normal; color: #dfeee0;">(Mammals: ${mammalCount}, Birds: ${birdCount})</small>`;
-
-                // 1. Filter records by the selected taxa in the detail panel ('All', 'Mamalia', 'Burung')
-                const filteredByTaxa = taxaFilter === 'All' ? records : records.filter(r => r.Taxa === taxaFilter);
-
-                // 2. Deduplicate the filtered records
-                // We create a unique key for each observation based on its scientific name, month, and year.
-                // The Map object ensures that only the first entry for each unique key is kept.
-                const uniqueRecords = [...new Map(filteredByTaxa.map(item =>
-                    [`${item["Nama Ilmiah"]}-${item.Bulan}-${item.Tahun}`, item]
-                )).values()];
-                
-                // 3. Render the deduplicated list
-                speciesListEl.innerHTML = uniqueRecords.map(r => {
-                    let iucnHtml = '';
-                    const status = r['Status IUCN'];
-                    const statusInfo = status ? iucnStatusInfo[status.trim().toLowerCase()] : null;
-
-                    if (statusInfo) {
-                        const { abbr, color } = statusInfo;
-                        iucnHtml = ` • <a href="#" class="iucn-status-filter" data-status="${status}" style="font-weight:bold; color:${color};">IUCN: ${abbr}</a>`;
-                    }
-                    const speciesLink = `<a href="#" class="species-filter" data-species="${r.Jenis}" style="color: inherit; text-decoration: none;">${r.Jenis}</a>`;
-                    return `<div class="species-item"><strong>${speciesLink}</strong><div style="font-size:12px;color:#bce7b7;">${r["Nama Ilmiah"]} • ${r.Bulan}/${r.Tahun}${iucnHtml}</div></div>`;
-                }).join('');
-            }
-        }
-
-        function hideDetailPanel() {
-            detailPanel.classList.remove('visible');
-            resetGridStyles();
-            currentSelectedPlot = null;
-        }
-
-        closeDetailBtn.addEventListener('click', hideDetailPanel);
+        // --- 2. KONFIGURASI SUPABASE ---
+        // Menggunakan library Supabase CDN
+        const { createClient } = supabase;
+        const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
         
-        // --- FILTER & SEARCH LOGIC ---
+        // Menggunakan variabel 'dbClient' (bukan 'supabase') untuk keamanan namespace
+        const dbClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Autocomplete
-        searchInput.addEventListener('input', () => {
-            const query = searchInput.value.toLowerCase();
-            autocompleteList.innerHTML = '';
-            if (query.length < 2) return;
+        let biodiversityData = [];
 
-            const suggestions = uniqueSpecies.filter(s => s.toLowerCase().includes(query)).slice(0, 5);
-            suggestions.forEach(s => {
-                const div = document.createElement('div');
-                div.textContent = s;
-                div.addEventListener('click', () => {
-                    searchInput.value = s;
-                    autocompleteList.innerHTML = '';
-                    applyFilters();
-                });
-                autocompleteList.appendChild(div);
-            });
-        });
-        document.addEventListener('click', (e) => {
-            if (e.target !== searchInput) autocompleteList.innerHTML = '';
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
         });
 
-        // Populate Button-based Filters
-        function populateFilters(data) {
-            const taxaGroup = document.getElementById('filterTaxa');
-            const monthGroup = document.getElementById('filterMonth');
-            const yearGroup = document.getElementById('filterYear');
+        // --- 3. FETCH DATA & HITUNG STATISTIK ---
+        async function loadData() {
+            // Mengambil semua data dari View
+            const { data, error } = await dbClient
+                .from('biodiversity_dashboard')
+                .select('*');
 
-            const taxaTranslations = { 'Mamalia': 'Mammals', 'Burung': 'Birds' };
-            const monthTranslations = {
-                "Januari": "January", "Februari": "February", "Maret": "March", "April": "April",
-                "Mei": "May", "Juni": "June", "Juli": "July", "Agustus": "August",
-                "September": "September", "Oktober": "October", "November": "November", "Desember": "December"
-            };
-
-            const uniqueTaxa = [...new Set(data.map(item => item.Taxa))].filter(Boolean).sort();
-            const uniqueYears = [...new Set(data.map(item => item.Tahun))].filter(Boolean).sort((a, b) => b - a);
-            const monthOrder = { "Januari": 1, "Februari": 2, "Maret": 3, "April": 4, "Mei": 5, "Juni": 6, "Juli": 7, "Agustus": 8, "September": 9, "Oktober": 10, "November": 11, "Desember": 12 };
-            const uniqueMonths = [...new Set(data.map(item => item.Bulan))].filter(Boolean).sort((a, b) => (monthOrder[a] || 99) - (monthOrder[b] || 99));
-
-            const createButtons = (items, container, translations = {}) => {
-                container.innerHTML = items.map(item => {
-                    const display_text = translations[item] || item;
-                    return `<button data-value="${item}">${display_text}</button>`;
-                }).join('');
-            };
-
-            createButtons(uniqueTaxa, taxaGroup, taxaTranslations);
-            createButtons(uniqueYears, yearGroup);
-            createButtons(uniqueMonths, monthGroup, monthTranslations);
-
-            document.querySelectorAll('.button-group').forEach(group => {
-                group.addEventListener('click', e => {
-                    if (e.target.tagName === 'BUTTON') {
-                        const currentActive = group.querySelector('.active');
-                        if (currentActive) currentActive.classList.remove('active');
-                        if (currentActive !== e.target) {
-                            e.target.classList.add('active');
-                        }
-                        applyFilters();
-                    }
-                });
-            });
-        }
-        
-        // Detail panel taxa filter
-        document.getElementById('detail-taxa-filter').addEventListener('click', e => {
-            if (e.target.tagName === 'BUTTON') {
-                document.querySelectorAll('#detail-taxa-filter button').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                if (currentSelectedPlot) renderDetailPanel(currentSelectedPlot, e.target.dataset.taxa);
-            }
-        });
-
-        function filterByIucnStatus(statusToFilter) {
-            if (!statusToFilter || biodiversityData.length === 0) return;
-
-            // 1. Reset existing filters and UI state
-            resetAllFilters();
-            hideDetailPanel();
-
-            // 2. Find plots containing species with the specified IUCN status
-            const plotsToHighlight = [...new Set(biodiversityData
-                .filter(d => d['Status IUCN'] && d['Status IUCN'].trim().toLowerCase() === statusToFilter.trim().toLowerCase())
-                .map(d => d.Plot))];
-
-            // 3. Highlight the found plots on the map
-            highlightPlots(plotsToHighlight);
-        }
-
-        function filterBySpecies(speciesName) {
-            if (!speciesName || biodiversityData.length === 0) return;
-            // Don't call resetAllFilters, just reset the UI state manually
-            searchInput.value = '';
-            document.querySelectorAll('.button-group button.active').forEach(btn => btn.classList.remove('active'));
-            hideDetailPanel();
-
-            const plotsToHighlight = [...new Set(biodiversityData
-                .filter(d => d.Jenis === speciesName || d['Nama Ilmiah'] === speciesName)
-                .map(d => d.Plot))];
-            highlightPlots(plotsToHighlight);
-            filterStatusDisplay.textContent = speciesName;
-        }
-
-        function getActiveButtonValue(groupId) {
-            const activeButton = document.querySelector(`#${groupId} button.active`);
-            return activeButton ? activeButton.dataset.value : '';
-        }
-
-        function applyFilters() {
-            const query = searchInput.value.toLowerCase();
-            const taxa = getActiveButtonValue('filterTaxa');
-            const month = getActiveButtonValue('filterMonth');
-            const year = getActiveButtonValue('filterYear');
-
-            // If no filters are active, just reset the grid and do nothing else.
-            if (!query && !taxa && !month && !year) {
-                resetGridStyles();
+            if (error) {
+                console.error("Error loading data:", error);
                 return;
             }
 
-            if (biodiversityData.length === 0) return;
+            biodiversityData = data;
+            
+            // Hitung dan Animasikan Angka Spesies Unik per Taxa
+            updateCount('Mamalia');
+            updateCount('Burung');
+            updateCount('Herpetofauna');
+        }
 
-            const filteredData = biodiversityData.filter(d => {
-                const searchField = `${d.Jenis} ${d["Nama Ilmiah"]}`.toLowerCase();
-                const matchesQuery = query ? searchField.includes(query) : true;
-                const matchesTaxa = taxa ? d.Taxa === taxa : true;
-                const matchesMonth = month ? d.Bulan === month : true;
-                const matchesYear = year ? String(d.Tahun) === year : true;
-                return matchesQuery && matchesTaxa && matchesMonth && matchesYear;
+        function updateCount(taxa) {
+            // Filter data berdasarkan Taxa, lalu ambil kolom 'Jenis' (Species Name), masukkan ke Set agar unik
+            const uniqueSpeciesCount = new Set(
+                biodiversityData
+                .filter(d => d.Taxa === taxa)
+                .map(d => d.Jenis)
+            ).size;
+
+            const element = document.getElementById(`cnt-${taxa}`);
+            if (element) {
+                animateValue(element, 0, uniqueSpeciesCount, 2000);
+            }
+        }
+
+        // --- 4. ANIMATION & UI LOGIC ---
+        const viewSelection = document.getElementById('view-selection');
+        const viewList = document.getElementById('view-list');
+        const taxaBigTitle = document.getElementById('taxa-big-title');
+        const tableContent = document.getElementById('table-content');
+
+        function openList(taxa, cardElement) {
+            taxaBigTitle.textContent = taxa === 'Mamalia' ? 'Mammals' : (taxa === 'Burung' ? 'Birds' : 'Herpetofauna');
+            populateTable(taxa);
+            
+            viewSelection.classList.add('hidden'); 
+            viewList.classList.add('active');
+            viewList.style.pointerEvents = 'auto';
+        }
+
+        function closeList() {
+            viewList.classList.remove('active');
+            viewList.style.pointerEvents = 'none';
+            setTimeout(() => { viewSelection.classList.remove('hidden'); }, 300);
+        }
+
+        function populateTable(taxa) {
+            tableContent.innerHTML = '';
+            
+            // Filter data sesuai kartu yang diklik
+            const filtered = biodiversityData.filter(d => d.Taxa === taxa);
+            
+            // Urutkan berdasarkan Nama Jenis (A-Z)
+            filtered.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
+            
+            // Hapus duplikat untuk tabel (supaya 1 spesies cuma muncul 1 baris)
+            // Kita gunakan Map berdasarkan 'Jenis' atau 'Nama Ilmiah'
+            const uniqueSpecies = [...new Map(filtered.map(item => [item['Jenis'], item])).values()];
+
+            if (uniqueSpecies.length === 0) {
+                tableContent.innerHTML = '<div style="padding:20px; text-align:center;">No data recorded yet.</div>';
+                return;
+            }
+
+            uniqueSpecies.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'table-row';
+                
+                // Mengambil data dari kolom SQL View
+                // Catatan: 'Nama Inggris' dan 'Dilindungi' mungkin null karena di SQL View diset NULL
+                const commonName = item.Jenis || '-';
+                const englishName = item['Nama Inggris'] || '-'; 
+                const sciName = item['Nama Ilmiah'] || '-';
+                const family = item.Famili || '-';
+                const iucn = item['Status IUCN'] || '-';
+                const protection = item.Dilindungi || '-';
+
+                row.innerHTML = `
+                    <div><strong>${commonName}</strong></div>
+                    <div>${englishName}</div>
+                    <div><em>${sciName}</em></div>
+                    <div>${family}</div>
+                    <div>${iucn}</div>
+                    <div>${protection}</div>
+                `;
+                tableContent.appendChild(row);
             });
-
-            const plotsToHighlight = [...new Set(filteredData.map(d => d.Plot))];
-            highlightPlots(plotsToHighlight);
         }
 
-        function highlightPlots(plotNames) {
-            resetGridStyles();
-            plotNames.forEach(plotName => {
-                if (gridLayers[plotName]) {
-                    gridLayers[plotName].setStyle(getHighlightStyle());
-                    gridLayers[plotName].bringToFront();
-                }
-            });
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
         }
-
-        // Reset Functions
-        function resetAllFilters() {
-            searchInput.value = '';
-            document.querySelectorAll('.button-group button.active').forEach(btn => btn.classList.remove('active'));
-            applyFilters();
-        }
-
-        function resetGridStyles() {
-            Object.values(gridLayers).forEach(layer => layer.setStyle(getBaseStyle()));
-        }
-
-        function resetMapState() {
-            resetAllFilters();
-            filterStatusDisplay.textContent = ''; // Explicitly clear status text on full map reset
-            hideDetailPanel();
-            if (initialBounds) {
-                map.fitBounds(initialBounds);
-            }
-            // Also minimize search panel if it's open
-            if (!searchPanel.classList.contains('minimized')) {
-                togglePanel();
-            }
-        }
-
-        // Event Listeners
-        searchBtn.addEventListener('click', applyFilters);
-        searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') applyFilters(); });
-        resetBtn.addEventListener('click', resetAllFilters);
-
-        speciesListEl.addEventListener('click', e => {
-            const target = e.target.closest('.iucn-status-filter');
-            if (target) {
-                e.preventDefault();
-                const status = target.dataset.status;
-                filterByIucnStatus(status);
-            }
-            const speciesTarget = e.target.closest('.species-filter');
-            if (speciesTarget) {
-                e.preventDefault();
-                const species = speciesTarget.dataset.species;
-                filterBySpecies(species);
-            }
-        });
-
-        // Logout functionality
-        const authContainer = document.getElementById('auth-link-container');
-        const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-
-        if (isLoggedIn) {
-            authContainer.innerHTML = '<a href="#" id="logout-btn">LOGOUT</a>';
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    sessionStorage.removeItem('isLoggedIn');
-                    window.location.href = 'login.html';
-                });
-            }
-        } // No 'else' needed since this page is protected
-
-
     </script>
 </body>
 </html>
