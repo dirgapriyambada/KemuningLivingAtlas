@@ -1,417 +1,735 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
+
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Explore - Kemuning Forest Living Atlas</title>
-    
+
+   
+
     <style>
-        /* --- CSS SAMA PERSIS SEPERTI SEBELUMNYA --- */
+
+        /* --- CSS RESET & VARIABLES --- */
+
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-        
+
+       
+
         :root {
+
             --bg-dark: #1c2d15;
+
             --text-main: #162405;
+
             --accent: #c4ff9d;
+
             --muted: #6b7a63;
+
         }
+
+
 
         /* --- FONT SETUP --- */
+
         @font-face { font-family: 'SF Pro Display'; src: url('assets/SF-Pro-Text-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+
         @font-face { font-family: 'SF Pro Text'; src: url('assets/SF-Pro-Text-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+
         @font-face { font-family: 'SF Pro Text Medium'; src: url('assets/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 500; font-display: swap; }
 
+
+
         body, html {
+
             margin: 0; padding: 0; width: 100%; height: 100%;
+
             overflow: hidden;
+
             font-family: 'SF Pro Text', sans-serif;
+
             background: transparent;
+
         }
+
+
 
         /* BACKGROUND FIXED */
+
         .bg-fixed {
+
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+
             background: url('assets/bg.jpg') center/cover no-repeat;
+
             z-index: -10;
+
         }
+
+
 
         /* NAVIGATION */
+
         nav {
+
             position: fixed; top: 0; left: 0; right: 0;
+
             display: flex; justify-content: center; align-items: center;
-            padding: 40px 0; z-index: 2200; 
+
+            padding: 40px 0; z-index: 2200;
+
             background: transparent;
+
         }
+
         .nav-links { display: flex; gap: 40px; align-items: center; }
+
         .nav-links a {
+
             color: rgba(255, 255, 255, 0.75); text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            text-decoration: none; font-family: 'SF Pro Text', sans-serif; font-weight: 500; font-size: 13px; 
+
+            text-decoration: none; font-family: 'SF Pro Text', sans-serif; font-weight: 500; font-size: 13px;
+
             letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s ease; cursor: pointer;
+
         }
+
         .nav-links a:hover, .nav-links a.active {
+
             color: #fff; font-family: 'SF Pro Display', sans-serif; font-weight: 700; opacity: 1; transform: scale(1.02);
+
         }
+
         #nav-logout { color: #fff; }
+
         #nav-logout:hover { opacity: 0.8; }
 
+
+
         /* ========================================= */
+
         /* --- VIEW 1: LANDING CARDS (TAXA) --- */
+
         /* ========================================= */
+
         #view-selection {
+
             position: relative; width: 100%; height: 100vh;
+
             display: flex; flex-direction: column; justify-content: center; align-items: center;
+
             transition: opacity 0.4s ease;
+
         }
-        
+
+       
+
         #view-selection.hidden {
+
             opacity: 0; pointer-events: none;
+
         }
+
+
 
         .page-title {
+
             font-family: 'SF Pro Display', sans-serif; font-size: 48px; font-weight: 700;
+
             color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+
             margin-top: 60px; margin-bottom: 40px; text-align: center;
+
             opacity: 0; animation: fadeInUp 1s ease forwards;
+
         }
+
+
 
         .cards-container {
+
             display: flex; gap: 30px; justify-content: center; align-items: center;
+
             margin-bottom: 40px;
+
         }
 
+
+
         .taxa-card {
+
             position: relative; width: 300px; height: 380px;
+
             border-radius: 30px; overflow: hidden;
+
             box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+
             cursor: pointer;
+
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+
             opacity: 0; animation: fadeInUp 1s ease forwards;
+
             background-color: rgba(0,0,0,0.2);
+
         }
-        
+
+       
+
         .taxa-card:nth-child(1) { animation-delay: 0.2s; background: url('assets/explore-mammal.png') center / cover no-repeat; }
+
         .taxa-card:nth-child(2) { animation-delay: 0.4s; background: url('assets/explore-bird.png') center / cover no-repeat; }
+
         .taxa-card:nth-child(3) { animation-delay: 0.6s; background: url('assets/explore-herp.png') center / cover no-repeat; }
+
+
 
         .taxa-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
 
+
+
         .card-label {
+
             position: absolute; bottom: 25px; left: 20px; right: 20px;
+
             background: #F4F1E8; border-radius: 20px;
+
             padding: 12px 20px; display: flex; align-items: center; gap: 15px;
+
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+
         }
+
+
 
         .count-badge { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 24px; color: #2b3b2a; min-width: 40px; }
+
         .taxa-name { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 18px; color: #162405; text-transform: uppercase; letter-spacing: 1px; }
 
+
+
         .glass-btn {
+
             padding: 14px 50px; border-radius: 50px;
-            background: rgba(255, 255, 255, 0.1); 
+
+            background: rgba(255, 255, 255, 0.1);
+
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+
             border: none; outline: none;
+
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+
             color: #fff; font-family: 'SF Pro Text', sans-serif; font-size: 18px; font-weight: 600;
+
             cursor: pointer; transition: all 0.3s ease;
+
             opacity: 0; animation: fadeInUp 1s cubic-bezier(0.2, 1, 0.3, 1) 0.8s forwards;
-            text-decoration: none;
+
+            text-decoration: none; /* Karena ini tag <a> nanti */
+
             display: inline-block;
+
         }
+
         .glass-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
 
+
+
         /* ========================================= */
+
         /* --- VIEW 2: SPECIES LIST (MODAL) --- */
+
         /* ========================================= */
+
         #view-list {
+
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+
             z-index: 3000; pointer-events: none;
+
             display: flex; flex-direction: column; justify-content: center; align-items: center;
+
             opacity: 0; transition: opacity 0.3s ease;
+
         }
+
         #view-list.active { opacity: 1; pointer-events: auto; }
 
+
+
         /* LIST WRAPPER */
+
         .list-wrapper {
+
             position: relative;
+
             width: 85%; max-width: 1200px;
+
             display: flex; flex-direction: column;
+
         }
+
+
 
         /* Judul Besar di atas Tabel */
+
         #taxa-big-title {
+
             width: 100%;
-            font-family: 'SF Pro Display', sans-serif; 
-            font-size: 48px; 
+
+            font-family: 'SF Pro Display', sans-serif;
+
+            font-size: 48px;
+
             font-weight: 700;
-            color: #fff; 
+
+            color: #fff;
+
             text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            text-align: left; 
+
+            text-align: left;
+
             margin-bottom: 20px; z-index: 102;
+
             opacity: 0; transform: translateY(-20px);
+
             transition: all 0.5s ease;
+
         }
+
         #view-list.active #taxa-big-title { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
 
+
+
         /* Tombol Close */
+
         .close-modal-btn {
-            position: absolute; top: 10px; right: 0; 
-            width: 32px; height: 32px; 
+
+            position: absolute; top: 10px; right: 0;
+
+            width: 32px; height: 32px;
+
             border: 1.5px solid #fff; border-radius: 50%;
+
             background: transparent; color: #fff;
+
             font-size: 18px; font-weight: bold; cursor: pointer;
+
             display: flex; align-items: center; justify-content: center;
+
             transition: all 0.2s; z-index: 103;
+
         }
+
         .close-modal-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
 
+
+
         /* Wrapper Putih */
+
         .white-card-modal {
+
             position: relative;
+
             background: #FFFFFF;
+
             width: 100%; height: 70vh;
+
             border-radius: 24px;
+
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+
             /* GENIE ANIMATION */
+
             transform: scale(0); opacity: 0;
+
             transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s ease;
+
             transform-origin: center center;
+
             display: flex; flex-direction: column; overflow: hidden;
+
             pointer-events: auto;
+
         }
+
+
 
         #view-list.active .white-card-modal { transform: scale(1) !important; opacity: 1; }
 
+
+
         /* Tabel */
+
         .table-header {
+
             padding: 30px 40px 15px 40px;
+
             border-bottom: 1px solid #E0E0E0;
+
             display: grid;
-            grid-template-columns: 1.5fr 1.5fr 1.5fr 1fr 0.8fr 0.8fr; 
+
+            grid-template-columns: 1.5fr 1.5fr 1.5fr 1fr 0.8fr 0.8fr;
+
             gap: 20px;
+
             font-family: 'SF Pro Text', sans-serif; font-weight: 700; font-size: 14px; color: #162405;
+
         }
+
         .table-body { flex: 1; overflow-y: auto; padding: 0 40px 40px 40px; }
+
         .table-row {
+
             display: grid; grid-template-columns: 1.5fr 1.5fr 1.5fr 1fr 0.8fr 0.8fr;
+
             gap: 20px; padding: 20px 0; border-bottom: 1px solid #F0F0F0;
+
             font-family: 'SF Pro Text', sans-serif; font-size: 14px; color: #333;
+
             transition: background 0.2s; cursor: default;
+
         }
+
         .table-row:hover { background: #FAFAFA; }
+
         .table-row strong { font-weight: 600; color: #000; }
+
         .table-row em { font-style: italic; color: #555; }
+
+
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
+
+
         @media(max-width: 1000px) {
+
             .cards-container { flex-direction: column; }
+
             .page-title { margin-top: 100px; font-size: 36px; }
+
             .white-card-modal { height: 80vh; }
-            .table-header, .table-row { min-width: 800px; } 
+
+            .table-header, .table-row { min-width: 800px; }
+
             .table-body { overflow-x: auto; }
+
         }
+
     </style>
+
 </head>
+
+
 
 <body>
 
+
+
     <div class="bg-fixed"></div>
 
+
+
     <nav>
+
         <div class="nav-links">
+
             <a href="index.html#home">HOME</a>
+
             <a href="index.html#location">LOCATION</a>
+
             <a href="#" class="active">EXPLORE</a>
+
             <a href="index.html#about">ABOUT</a>
+
             <a href="#" id="nav-logout">LOGOUT</a>
+
         </div>
+
     </nav>
 
+
+
     <div id="view-selection">
+
         <h1 class="page-title">Our Wild Neighbors!</h1>
-        
+
+       
+
         <div class="cards-container">
+
             <div class="taxa-card" onclick="openList('Mamalia', this)">
+
                 <div class="card-label">
-                    <span id="cnt-Mamalia" class="count-badge">0</span>
+
+                    <span class="count-badge" data-target="18">0</span>
+
                     <span class="taxa-name">MAMMALS</span>
+
                 </div>
+
             </div>
+
             <div class="taxa-card" onclick="openList('Burung', this)">
+
                 <div class="card-label">
-                    <span id="cnt-Burung" class="count-badge">0</span>
+
+                    <span class="count-badge" data-target="100">0</span>
+
                     <span class="taxa-name">BIRDS</span>
+
                 </div>
+
             </div>
+
             <div class="taxa-card" onclick="openList('Herpetofauna', this)">
+
                 <div class="card-label">
-                    <span id="cnt-Herpetofauna" class="count-badge">0</span>
+
+                    <span class="count-badge" data-target="22">0</span>
+
                     <span class="taxa-name">HERPETOFAUNA</span>
+
                 </div>
+
             </div>
+
         </div>
 
-        <a href="map.html" class="glass-btn">Explore Map</a>
+
+
+        <a href="map.html" class="glass-btn">Explore</a>
+
     </div>
+
+
 
     <div id="view-list">
+
         <div class="list-wrapper">
+
             <h2 id="taxa-big-title">Mammals</h2>
+
             <button class="close-modal-btn" onclick="closeList()">&times;</button>
-            
+
+           
+
             <div class="white-card-modal" id="modal-card">
+
                 <div class="table-header">
+
                     <div>Common Name</div>
+
                     <div>English Name</div>
+
                     <div>Scientific Name</div>
+
                     <div>Family</div>
+
                     <div>IUCN Status</div>
+
                     <div>Protection Status</div>
+
                 </div>
+
                 <div class="table-body" id="table-content">
+
                     </div>
+
             </div>
+
         </div>
+
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <script>
+
         // --- 1. GATEKEEPER ---
+
         if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+
             window.location.href = 'index.html';
+
         }
 
+
+
         document.getElementById('nav-logout').addEventListener('click', (e) => {
+
             e.preventDefault();
+
             sessionStorage.removeItem('isLoggedIn');
+
             window.location.href = 'index.html';
+
         });
 
-        // --- 2. KONFIGURASI SUPABASE ---
-        // Menggunakan library Supabase CDN
-        const { createClient } = supabase;
-        const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
-        
-        // Menggunakan variabel 'dbClient' (bukan 'supabase') untuk keamanan namespace
-        const dbClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+        // --- 2. DATA ---
 
         let biodiversityData = [];
 
+
+
         document.addEventListener('DOMContentLoaded', () => {
-            loadData();
+
+            document.querySelectorAll('.count-badge').forEach(el => {
+
+                const target = parseInt(el.getAttribute('data-target'));
+
+                animateValue(el, 0, target, 2000);
+
+            });
+
+
+
+            Papa.parse('assets/biodiversity.csv', {
+
+                download: true, header: true, skipEmptyLines: true,
+
+                complete: (results) => {
+
+                    biodiversityData = results.data;
+
+                }
+
+            });
+
         });
 
-        // --- 3. FETCH DATA & HITUNG STATISTIK ---
-        async function loadData() {
-            // Mengambil semua data dari View
-            const { data, error } = await dbClient
-                .from('biodiversity_dashboard')
-                .select('*');
 
-            if (error) {
-                console.error("Error loading data:", error);
-                return;
-            }
 
-            biodiversityData = data;
-            
-            // Hitung dan Animasikan Angka Spesies Unik per Taxa
-            updateCount('Mamalia');
-            updateCount('Burung');
-            updateCount('Herpetofauna');
-        }
+        // --- 3. ANIMATION LOGIC ---
 
-        function updateCount(taxa) {
-            // Filter data berdasarkan Taxa, lalu ambil kolom 'Jenis' (Species Name), masukkan ke Set agar unik
-            const uniqueSpeciesCount = new Set(
-                biodiversityData
-                .filter(d => d.Taxa === taxa)
-                .map(d => d.Jenis)
-            ).size;
-
-            const element = document.getElementById(`cnt-${taxa}`);
-            if (element) {
-                animateValue(element, 0, uniqueSpeciesCount, 2000);
-            }
-        }
-
-        // --- 4. ANIMATION & UI LOGIC ---
         const viewSelection = document.getElementById('view-selection');
+
         const viewList = document.getElementById('view-list');
+
         const taxaBigTitle = document.getElementById('taxa-big-title');
+
         const tableContent = document.getElementById('table-content');
 
+
+
         function openList(taxa, cardElement) {
+
             taxaBigTitle.textContent = taxa === 'Mamalia' ? 'Mammals' : (taxa === 'Burung' ? 'Birds' : 'Herpetofauna');
+
             populateTable(taxa);
-            
-            viewSelection.classList.add('hidden'); 
+
+            viewSelection.classList.add('hidden');
+
             viewList.classList.add('active');
+
             viewList.style.pointerEvents = 'auto';
+
         }
+
+
 
         function closeList() {
+
             viewList.classList.remove('active');
+
             viewList.style.pointerEvents = 'none';
+
             setTimeout(() => { viewSelection.classList.remove('hidden'); }, 300);
+
         }
+
+
 
         function populateTable(taxa) {
-            tableContent.innerHTML = '';
-            
-            // Filter data sesuai kartu yang diklik
-            const filtered = biodiversityData.filter(d => d.Taxa === taxa);
-            
-            // Urutkan berdasarkan Nama Jenis (A-Z)
-            filtered.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
-            
-            // Hapus duplikat untuk tabel (supaya 1 spesies cuma muncul 1 baris)
-            // Kita gunakan Map berdasarkan 'Jenis' atau 'Nama Ilmiah'
-            const uniqueSpecies = [...new Map(filtered.map(item => [item['Jenis'], item])).values()];
 
-            if (uniqueSpecies.length === 0) {
-                tableContent.innerHTML = '<div style="padding:20px; text-align:center;">No data recorded yet.</div>';
-                return;
-            }
+            tableContent.innerHTML = '';
+
+            const filtered = biodiversityData.filter(d => d.Taxa === taxa);
+
+            filtered.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
+
+            const uniqueSpecies = [...new Map(filtered.map(item => [item['Nama Ilmiah'], item])).values()];
+
+
 
             uniqueSpecies.forEach(item => {
+
                 const row = document.createElement('div');
+
                 row.className = 'table-row';
-                
-                // Mengambil data dari kolom SQL View
-                // Catatan: 'Nama Inggris' dan 'Dilindungi' mungkin null karena di SQL View diset NULL
+
                 const commonName = item.Jenis || '-';
-                const englishName = item['Nama Inggris'] || '-'; 
+
+                const englishName = item['Nama Inggris'] || '-';
+
                 const sciName = item['Nama Ilmiah'] || '-';
+
                 const family = item.Famili || '-';
+
                 const iucn = item['Status IUCN'] || '-';
+
                 const protection = item.Dilindungi || '-';
 
+
+
                 row.innerHTML = `
+
                     <div><strong>${commonName}</strong></div>
+
                     <div>${englishName}</div>
+
                     <div><em>${sciName}</em></div>
+
                     <div>${family}</div>
+
                     <div>${iucn}</div>
+
                     <div>${protection}</div>
+
                 `;
+
                 tableContent.appendChild(row);
+
             });
+
         }
 
+
+
         function animateValue(obj, start, end, duration) {
+
             let startTimestamp = null;
+
             const step = (timestamp) => {
+
                 if (!startTimestamp) startTimestamp = timestamp;
+
                 const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+
                 obj.innerHTML = Math.floor(progress * (end - start) + start);
+
                 if (progress < 1) window.requestAnimationFrame(step);
+
             };
+
             window.requestAnimationFrame(step);
+
         }
+
     </script>
+
 </body>
+
 </html>
