@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        /* --- CSS STYLE --- */
+        /* --- CSS STYLE (SAMA SEPERTI SEBELUMNYA) --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
         :root {
             --primary-green: #184D32; --secondary-text: #87CEA2; --monitoring-text: #4AA46F;
@@ -74,8 +74,8 @@
         .data-table th::after { content: ' ↕'; opacity: 0.3; font-size: 10px; }
         .data-table td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px; color: #333; }
         .data-table td strong { font-weight: 700; color: var(--primary-green); display: block; }
-        .data-table td strong:hover { color: #2E7D32; text-decoration: underline; } /* Hover effect untuk species name */
-        .clickable-species { cursor: pointer; } /* Penanda bahwa ini bisa diklik */
+        .data-table td strong:hover { color: #2E7D32; text-decoration: underline; }
+        .clickable-species { cursor: pointer; }
         
         .data-table td em { font-size: 11px; color: #999; font-style: italic; }
         .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; }
@@ -87,7 +87,7 @@
         .leaflet-control-layers { border: none !important; border-radius: 8px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important; font-family: 'SF Pro Text', sans-serif !important; font-size: 11px !important; }
         .grid-label { background: transparent; border: none; box-shadow: none; color: #fff; font-weight: 700; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 
-        /* --- ANALYTICS MODAL CSS (NEW) --- */
+        /* --- ANALYTICS MODAL CSS --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px);
@@ -274,7 +274,6 @@
         let currentGridRawData = [];
         let sortDirection = 1;
 
-        // Variabel untuk menyimpan instance Chart agar bisa di-destroy sebelum render ulang
         let trendChartInstance = null;
         let locationChartInstance = null;
 
@@ -330,7 +329,6 @@
                     map.fitBounds(gridLayer.getBounds());
                 })
                 .catch(e => {
-                    // Fallback
                     fetch('assets/gris.geojson').then(r => r.json()).then(data => {
                          gridLayer = L.geoJSON(data, { style: getBaseStyle, onEachFeature: onEachGrid }).addTo(map);
                          layerControl.addOverlay(gridLayer, "Survey Grids");
@@ -366,7 +364,8 @@
         }
 
         function onEachRiver(feature, layer) {
-            const id = feature.properties.Sungai || "River";
+            // FIX: Cek properti 'Sungai' ATAU 'Name' untuk jaga-jaga format GeoJSON
+            const id = feature.properties.Sungai || feature.properties.Name || "River";
             layer.bindTooltip(id, { sticky: true, className: 'grid-label', direction: 'top' });
             layer.on({
                 mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle({ weight: 5, color: '#8ecae6' }); },
@@ -380,6 +379,7 @@
             });
         }
 
+        // --- CORE FIX HERE: FLEXIBLE LOCATION MATCHING ---
         function selectLocation(layer, id, type) {
             if (selectedLayer) {
                 if (selectedLayerType === 'grid') gridLayer.resetStyle(selectedLayer);
@@ -400,7 +400,18 @@
             document.getElementById('detail-content').style.display = 'flex';
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
-            currentGridRawData = biodiversityData.filter(d => d.Plot === id);
+            // PERBAIKAN LOGIKA FILTER: Gunakan lowercase & trim untuk mencocokkan nama
+            const targetId = id.toString().toLowerCase().trim();
+            console.log("Mencari data untuk lokasi:", targetId); // Debugging di Console
+
+            currentGridRawData = biodiversityData.filter(d => {
+                const dbPlot = d.Plot ? d.Plot.toString().toLowerCase().trim() : "";
+                // Cocokkan persis atau jika database punya kolom lain (antisipasi)
+                return dbPlot === targetId;
+            });
+            
+            console.log("Data ditemukan:", currentGridRawData.length); // Debugging
+
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
@@ -424,7 +435,9 @@
         }
 
         function updateStats() {
+            // Karena database sudah di-update jadi 'Herpetofauna' semua, logika ini jadi simpel lagi
             const unique = (taxa) => new Set(biodiversityData.filter(d => d.Taxa === taxa).map(d => d.Jenis)).size;
+            
             document.getElementById('stat-mammal').innerText = unique('Mamalia');
             document.getElementById('stat-bird').innerText = unique('Burung');
             document.getElementById('stat-herp').innerText = unique('Herpetofauna');
@@ -569,7 +582,6 @@
                     else if(iucn.includes('NT')) badgeColor = iucnColors['NT'];
                     else if(iucn.includes('LC')) badgeColor = iucnColors['LC'];
                     
-                    // MODIFIKASI: Menambahkan onclick event pada nama spesies
                     const row = `
                         <tr>
                             <td>
@@ -589,13 +601,11 @@
             }
         }
 
-        // --- NEW: ANALYTICS LOGIC ---
+        // --- ANALYTICS LOGIC ---
         function showAnalytics(speciesName) {
             const modal = document.getElementById('analyticsModal');
             const title = document.getElementById('analytics-title');
             
-            // 1. Ambil data spesies dari global biodiversityData (bukan cuma yg di grid sekarang)
-            // Tujuannya agar analisisnya mencakup seluruh kawasan, bukan cuma grid yang diklik
             const speciesData = biodiversityData.filter(d => d.Jenis === speciesName);
             
             if(speciesData.length === 0) return;
@@ -605,8 +615,6 @@
             // 2. Olah Data untuk Grafik Waktu (Trend)
             const timeMap = {};
             speciesData.forEach(d => {
-                // Buat key seperti "2024-01" untuk sorting
-                // Kita perlu mapping nama bulan ke angka
                 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
                 const monthIndex = monthNames.indexOf(d.Bulan);
                 const sortKey = `${d.Tahun}-${String(monthIndex + 1).padStart(2, '0')}`; // YYYY-MM
@@ -616,7 +624,6 @@
                 timeMap[sortKey].count += (d.Jumlah || 1);
             });
             
-            // Sort data waktu secara kronologis
             const sortedTimeKeys = Object.keys(timeMap).sort();
             const timeLabels = sortedTimeKeys.map(k => timeMap[k].label);
             const timeCounts = sortedTimeKeys.map(k => timeMap[k].count);
@@ -629,14 +636,13 @@
                 locMap[plot] += (d.Jumlah || 1);
             });
             
-            // Sort lokasi berdasarkan jumlah terbanyak, ambil Top 5
             const sortedLocs = Object.entries(locMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
             const locLabels = sortedLocs.map(i => i[0]);
             const locCounts = sortedLocs.map(i => i[1]);
 
             // 4. Render Chart (Trend)
             const ctxTrend = document.getElementById('trendChart').getContext('2d');
-            if(trendChartInstance) trendChartInstance.destroy(); // Hapus chart lama
+            if(trendChartInstance) trendChartInstance.destroy();
             
             trendChartInstance = new Chart(ctxTrend, {
                 type: 'line',
@@ -673,7 +679,6 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 6. Show Modal
             modal.classList.add('active');
         }
 
@@ -681,7 +686,6 @@
             document.getElementById('analyticsModal').classList.remove('active');
         }
 
-        // Close modal when clicking outside
         document.getElementById('analyticsModal').addEventListener('click', (e) => {
             if(e.target === document.getElementById('analyticsModal')) closeAnalytics();
         });
