@@ -298,31 +298,36 @@
                 if (data && data.length > 0) {
                     const dateObj = new Date(data[0].created_at);
                     document.getElementById('last-monitoring-date').innerText = `${dateObj.toLocaleString('default', { month: 'long' })}, ${dateObj.getFullYear()}`;
-                } else {
-                    document.getElementById('last-monitoring-date').innerText = "-";
-                }
+                } else { document.getElementById('last-monitoring-date').innerText = "-"; }
             } catch (err) { console.error("Fetch date error:", err); }
         }
 
         function animateValue(obj, start, end, duration) {
             if(!obj) return;
-            let start = null;
+            let startT = null;
             const step = (ts) => {
-                if (!start) start = ts;
-                const progress = Math.min((ts - start) / duration, 1);
+                if (!startT) startT = ts;
+                const progress = Math.min((ts - startT) / duration, 1);
                 obj.innerHTML = Math.floor(progress * (end - start) + start);
                 if (progress < 1) window.requestAnimationFrame(step);
             };
             window.requestAnimationFrame(step);
         }
 
+        // --- LOAD DATA ---
+        // KUNCI PERBAIKAN: Set range sangat besar agar dianggap "No Limit"
+        // Ini memastikan data Herpetofauna (yang mungkin ada di urutan bawah) tetap terambil.
         async function loadMapData() {
-            // PERBAIKAN: Meningkatkan limit ke 15.000 agar data Herpetofauna (di baris bawah) ikut terambil
-            const { data, error } = await dbClient.from('biodiversity_dashboard').select('*').range(0, 14999); 
-            if (error) { console.error("Error Supabase:", error); } 
-            else { 
+            const { data, error } = await dbClient
+                .from('biodiversity_dashboard')
+                .select('*')
+                .range(0, 99999); // SET KE 100.000 (SANGAT AMAN)
+            
+            if (error) { 
+                console.error("Error Supabase:", error); 
+            } else { 
+                console.log("Total Data Terload:", data.length);
                 biodiversityData = data; 
-                console.log(`DATA LOADED: Total ${data.length} baris.`);
                 populateDropdowns(); 
             }
         }
@@ -335,15 +340,24 @@
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
             const overlays = {}; 
+            
             fetch('assets/rivers.geojson').then(r => r.json()).then(data => {
-                riverLayer = L.geoJSON(data, { style: { color: '#3498db', weight: 3, opacity: 0.8 }, onEachFeature: onEachRiver }).addTo(map);
+                riverLayer = L.geoJSON(data, { 
+                    style: { color: '#3498db', weight: 3, opacity: 0.8 }, 
+                    onEachFeature: onEachRiver 
+                }).addTo(map);
                 riverLayer.bringToBack();
                 L.control.layers({ "Esri Satellite": esriSat, "OpenStreetMap": osm, "Dark Mode": cartoDark }, { "Rivers": riverLayer }, { position: 'bottomright' }).addTo(map);
             });
+
             fetch('assets/grids.geojson').then(r => r.json()).then(data => {
-                gridLayer = L.geoJSON(data, { style: { color: accentColor, weight: 1, opacity: 0.7, fillColor: accentColor, fillOpacity: 0.15 }, onEachFeature: onEachGrid }).addTo(map);
+                gridLayer = L.geoJSON(data, { 
+                    style: { color: accentColor, weight: 1, opacity: 0.7, fillColor: accentColor, fillOpacity: 0.15 }, 
+                    onEachFeature: onEachGrid 
+                }).addTo(map);
                 map.fitBounds(gridLayer.getBounds());
             });
+
             map.on('click', () => { resetSelection(); });
         }
 
@@ -358,7 +372,7 @@
         }
 
         function onEachRiver(feature, layer) {
-            // MENGAMBIL NAMA SUNGAI SESUAI GEOJSON (Case Sensitive sesuai filemu)
+            // Logika Sesuai Permintaan: Baca langsung nama sungai
             const id = feature.properties.Sungai || feature.properties.Name || "River";
             layer.bindTooltip(id, { sticky: true, className: 'grid-label', direction: 'top' });
             layer.on({
@@ -388,18 +402,18 @@
             document.getElementById('detail-content').style.display = 'flex';
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
-            // PEMBERSIHAN STRING (Trim & Lowercase saja untuk pencocokan)
-            const targetId = id.toString().toLowerCase().trim();
+            // LOGIKA PENTING: Mencocokkan ID Peta dengan Kolom Plot di DB
+            const targetId = id.toString().trim(); // Hapus spasi jaga-jaga
             
-            console.log(`KLIK PETA: "${id}" -> MENCARI DI DB: "${targetId}"`);
+            console.log("Klik ID:", targetId);
 
             currentGridRawData = biodiversityData.filter(d => {
                 if (!d.Plot) return false;
-                const dbPlot = d.Plot.toString().toLowerCase().trim();
-                return dbPlot === targetId;
+                // Cocokkan persis (setelah di-trim spasi)
+                return d.Plot.toString().trim() === targetId;
             });
             
-            console.log(`HASIL: ${currentGridRawData.length} data ditemukan.`);
+            console.log("Data ditemukan:", currentGridRawData.length);
 
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
