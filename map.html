@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        /* --- CSS STYLE (TIDAK ADA PERUBAHAN) --- */
+        /* --- CSS STYLE (SAMA SEPERTI SEBELUMNYA) --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
         :root {
             --primary-green: #184D32; --secondary-text: #87CEA2; --monitoring-text: #4AA46F;
@@ -297,25 +297,41 @@
             } catch (err) { console.error("Error fetching header stats:", err); }
         }
 
-        // --- 2. FETCH LAST MONITORING DATE ---
+        // --- 2. FETCH LAST MONITORING DATE (PERBAIKAN: Ambil dari tabel surveys, kolom created_at) ---
         async function fetchLastMonitoring() {
             try {
+                // Query ke tabel 'surveys' ambil 'created_at' terbarus
                 const { data, error } = await dbClient
                     .from('surveys') 
                     .select('created_at')
                     .order('created_at', { ascending: false })
                     .limit(1);
 
+                if (error) {
+                    console.error("Error fetching survey date:", error);
+                    return;
+                }
+
                 if (data && data.length > 0) {
+                    // Ambil string tanggal (misal: "2025-11-20 12:43:00+00")
                     const rawDate = data[0].created_at;
+                    
+                    // Ubah jadi Objek Date JavaScript
                     const dateObj = new Date(rawDate);
+                    
+                    // Ambil Nama Bulan (Bahasa Inggris/Default)
                     const month = dateObj.toLocaleString('default', { month: 'long' });
+                    // Ambil Tahun
                     const year = dateObj.getFullYear();
+                    
+                    // Tampilkan: "November, 2025"
                     document.getElementById('last-monitoring-date').innerText = `${month}, ${year}`;
                 } else {
                     document.getElementById('last-monitoring-date').innerText = "-";
                 }
-            } catch (err) { console.error("Fetch error:", err); }
+            } catch (err) {
+                console.error("Fetch error:", err);
+            }
         }
 
         function animateValue(obj, start, end, duration) {
@@ -331,14 +347,9 @@
         }
 
         async function loadMapData() {
-            // Ambil semua data (sampai 4999 baris agar herpetofauna terambil semua)
             const { data, error } = await dbClient.from('biodiversity_dashboard').select('*').range(0, 4999); 
             if (error) { console.error("Error fetching Supabase:", error); } 
-            else { 
-                console.log("Map Data loaded:", data.length, "rows");
-                biodiversityData = data; 
-                populateDropdowns(); 
-            }
+            else { biodiversityData = data; populateDropdowns(); }
         }
 
         function initializeMap() {
@@ -352,10 +363,7 @@
             const overlays = {}; 
             
             fetch('assets/rivers.geojson').then(r => r.json()).then(data => {
-                riverLayer = L.geoJSON(data, { 
-                    style: getRiverStyle, 
-                    onEachFeature: onEachRiver 
-                }).addTo(map);
+                riverLayer = L.geoJSON(data, { style: getRiverStyle, onEachFeature: onEachRiver }).addTo(map);
                 riverLayer.bringToBack();
                 L.control.layers({ "Esri Satellite": esriSat, "OpenStreetMap": osm, "Dark Mode": cartoDark }, { "Rivers": riverLayer }, { position: 'bottomright' }).addTo(map);
             });
@@ -385,22 +393,16 @@
             });
         }
 
-        // --- PERBAIKAN LOGIKA SUNGAI DI SINI ---
         function onEachRiver(feature, layer) {
-            // Prioritaskan Nama properti yang mungkin ada di GeoJSON: "Sungai", "Name", atau "id"
-            // Kita ambil raw name-nya dulu
-            const rawName = feature.properties.Sungai || feature.properties.Name || "River";
-            
-            layer.bindTooltip(rawName, { sticky: true, className: 'grid-label', direction: 'top' });
-            
+            const id = feature.properties.Sungai || feature.properties.Name || "River";
+            layer.bindTooltip(id, { sticky: true, className: 'grid-label', direction: 'top' });
             layer.on({
                 mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle({ weight: 5, color: '#8ecae6' }); },
                 mouseout: (e) => { if(layer !== selectedLayer) { const searchVal = document.getElementById('searchSpecies').value; if(searchVal) { applyFilters(); } else { riverLayer.resetStyle(e.target); } } },
-                click: (e) => { L.DomEvent.stopPropagation(e); selectLocation(layer, rawName, 'river'); }
+                click: (e) => { L.DomEvent.stopPropagation(e); selectLocation(layer, id, 'river'); }
             });
         }
 
-        // --- CORE FIX: PENCOCOKAN YANG LEBIH PINTAR ---
         function selectLocation(layer, id, type) {
             if (selectedLayer) {
                 if (selectedLayerType === 'grid') gridLayer.resetStyle(selectedLayer);
@@ -421,31 +423,12 @@
             document.getElementById('detail-content').style.display = 'flex';
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
-            // --- NORMALISASI ID ---
-            // 1. Ubah ke lowercase
-            // 2. Hapus spasi (trim)
-            // 3. Jika itu sungai, coba hapus kata "sungai" biar cocok sama database
-            let targetId = id.toString().toLowerCase().trim();
-            
-            // Opsional: Jika di peta tertulis "Sungai Mbelik" tapi database cuma "Mbelik"
-            if (type === 'river') {
-                targetId = targetId.replace('sungai', '').trim();
-            }
-
-            console.log("Klik Peta ID:", id, "-> Mencari di DB:", targetId); // Debugging
-
+            const targetId = id.toString().toLowerCase().trim();
             currentGridRawData = biodiversityData.filter(d => {
-                if (!d.Plot) return false;
-                
-                // Normalisasi Data Database juga
-                const dbPlot = d.Plot.toString().toLowerCase().trim();
-                
-                // Cek kesamaan
+                const dbPlot = d.Plot ? d.Plot.toString().toLowerCase().trim() : "";
                 return dbPlot === targetId;
             });
             
-            console.log("Ketemu:", currentGridRawData.length, "data");
-
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
@@ -540,14 +523,7 @@
                 }
                 if(riverLayer) {
                     riverLayer.eachLayer(layer => {
-                        // FIX: Cek juga river plot matching di sini
-                        const riverName = layer.feature.properties.Sungai || layer.feature.properties.Name || "";
-                        // Cari apakah riverName ada di dalam set activePlots (dengan normalisasi sederhana)
-                        const isMatch = Array.from(activePlots).some(plot => 
-                            plot && riverName && plot.toLowerCase().trim() === riverName.toLowerCase().trim()
-                        );
-
-                        if (isMatch) {
+                        if (activePlots.has(layer.feature.properties.Sungai)) {
                             layer.setStyle(getHighlightedRiverStyle());
                         }
                     });
