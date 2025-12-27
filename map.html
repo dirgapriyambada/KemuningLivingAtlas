@@ -280,57 +280,57 @@
         document.addEventListener('DOMContentLoaded', () => {
             initializeMap();
             loadMapData();
-            fetchHeaderStats(); // Fungsi baru untuk statistik (sama kayak explore.html)
-            fetchLastMonitoring(); // Fungsi baru untuk tanggal monitoring terbaru
+            fetchHeaderStats(); 
+            fetchLastMonitoring(); 
         });
 
-        // --- 1. FETCH HEADER STATS (Sama Logic dengan Explore.html) ---
+        // --- 1. FETCH HEADER STATS ---
         async function fetchHeaderStats() {
             try {
-                // Fetch Mammals Count (dari View)
-                const { count: countM } = await dbClient
-                    .from('view_species_mamalia')
-                    .select('*', { count: 'exact', head: true }); // head: true biar hemat, cuma ambil jumlah
+                const { count: countM } = await dbClient.from('view_species_mamalia').select('*', { count: 'exact', head: true });
+                const { count: countB } = await dbClient.from('view_species_burung').select('*', { count: 'exact', head: true });
+                const { count: countH } = await dbClient.from('view_species_herpetofauna').select('*', { count: 'exact', head: true });
 
-                // Fetch Birds Count
-                const { count: countB } = await dbClient
-                    .from('view_species_burung')
-                    .select('*', { count: 'exact', head: true });
-
-                // Fetch Herps Count
-                const { count: countH } = await dbClient
-                    .from('view_species_herpetofauna')
-                    .select('*', { count: 'exact', head: true });
-
-                // Update UI
                 animateValue(document.getElementById('stat-mammal'), 0, countM || 0, 1500);
                 animateValue(document.getElementById('stat-bird'), 0, countB || 0, 1500);
                 animateValue(document.getElementById('stat-herp'), 0, countH || 0, 1500);
-
-            } catch (err) {
-                console.error("Error fetching header stats:", err);
-            }
+            } catch (err) { console.error("Error fetching header stats:", err); }
         }
 
-        // --- 2. FETCH LAST MONITORING DATE ---
+        // --- 2. FETCH LAST MONITORING DATE (PERBAIKAN: Ambil dari tabel surveys, kolom created_at) ---
         async function fetchLastMonitoring() {
             try {
-                // Ambil 1 data dengan tanggal paling baru (descending)
+                // Query ke tabel 'surveys' ambil 'created_at' terbarus
                 const { data, error } = await dbClient
-                    .from('biodiversity_dashboard')
-                    .select('Bulan, Tahun, Date')
-                    .order('Date', { ascending: false })
+                    .from('surveys') 
+                    .select('created_at')
+                    .order('created_at', { ascending: false })
                     .limit(1);
 
+                if (error) {
+                    console.error("Error fetching survey date:", error);
+                    return;
+                }
+
                 if (data && data.length > 0) {
-                    const latest = data[0];
-                    // Tampilkan format "Bulan Tahun" (contoh: December 2025)
-                    document.getElementById('last-monitoring-date').innerText = `${latest.Bulan} ${latest.Tahun}`;
+                    // Ambil string tanggal (misal: "2025-11-20 12:43:00+00")
+                    const rawDate = data[0].created_at;
+                    
+                    // Ubah jadi Objek Date JavaScript
+                    const dateObj = new Date(rawDate);
+                    
+                    // Ambil Nama Bulan (Bahasa Inggris/Default)
+                    const month = dateObj.toLocaleString('default', { month: 'long' });
+                    // Ambil Tahun
+                    const year = dateObj.getFullYear();
+                    
+                    // Tampilkan: "November, 2025"
+                    document.getElementById('last-monitoring-date').innerText = `${month}, ${year}`;
                 } else {
                     document.getElementById('last-monitoring-date').innerText = "-";
                 }
             } catch (err) {
-                console.error("Error fetching date:", err);
+                console.error("Fetch error:", err);
             }
         }
 
@@ -346,24 +346,12 @@
             window.requestAnimationFrame(step);
         }
 
-        // --- FETCH DATA UNTUK PETA (TETAP MENGGUNAKAN DATA LENGKAP) ---
         async function loadMapData() {
-            // Kita butuh range() agar mengambil semua data jika lebih dari 1000
-            const { data, error } = await dbClient
-                .from('biodiversity_dashboard')
-                .select('*')
-                .range(0, 4999); 
-            
-            if (error) {
-                console.error("Error fetching Supabase:", error);
-            } else {
-                console.log("Map Data loaded:", data.length, "rows");
-                biodiversityData = data;
-                populateDropdowns();
-            }
+            const { data, error } = await dbClient.from('biodiversity_dashboard').select('*').range(0, 4999); 
+            if (error) { console.error("Error fetching Supabase:", error); } 
+            else { biodiversityData = data; populateDropdowns(); }
         }
 
-        // --- MAP INITIALIZATION ---
         function initializeMap() {
             const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' });
             const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
@@ -374,35 +362,17 @@
 
             const overlays = {}; 
             
-            fetch('assets/rivers.geojson')
-                .then(r => r.json())
-                .then(data => {
-                    riverLayer = L.geoJSON(data, { 
-                        style: getRiverStyle,
-                        onEachFeature: onEachRiver 
-                    }).addTo(map);
-                    riverLayer.bringToBack();
-                    layerControl.addOverlay(riverLayer, "Rivers");
-                })
-                .catch(e => console.log('Rivers missing/error', e));
+            fetch('assets/rivers.geojson').then(r => r.json()).then(data => {
+                riverLayer = L.geoJSON(data, { style: getRiverStyle, onEachFeature: onEachRiver }).addTo(map);
+                riverLayer.bringToBack();
+                L.control.layers({ "Esri Satellite": esriSat, "OpenStreetMap": osm, "Dark Mode": cartoDark }, { "Rivers": riverLayer }, { position: 'bottomright' }).addTo(map);
+            });
 
-            fetch('assets/grids.geojson')
-                .then(r => r.json())
-                .then(data => {
-                    gridLayer = L.geoJSON(data, { style: getBaseStyle, onEachFeature: onEachGrid }).addTo(map);
-                    layerControl.addOverlay(gridLayer, "Survey Grids");
-                    map.fitBounds(gridLayer.getBounds());
-                })
-                .catch(e => {
-                    fetch('assets/gris.geojson').then(r => r.json()).then(data => {
-                         gridLayer = L.geoJSON(data, { style: getBaseStyle, onEachFeature: onEachGrid }).addTo(map);
-                         layerControl.addOverlay(gridLayer, "Survey Grids");
-                    });
-                });
+            fetch('assets/grids.geojson').then(r => r.json()).then(data => {
+                gridLayer = L.geoJSON(data, { style: getBaseStyle, onEachFeature: onEachGrid }).addTo(map);
+                map.fitBounds(gridLayer.getBounds());
+            });
 
-            const baseMaps = { "Esri Satellite": esriSat, "OpenStreetMap": osm, "Dark Mode": cartoDark };
-            const layerControl = L.control.layers(baseMaps, overlays, { position: 'bottomright' }).addTo(map);
-            
             map.on('click', () => { resetSelection(); });
         }
 
@@ -418,12 +388,7 @@
             layer.bindTooltip(id, { permanent: true, direction: 'center', className: 'grid-label' });
             layer.on({
                 mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle(getHighlightStyle()); },
-                mouseout: (e) => { 
-                    if(layer !== selectedLayer) {
-                        const searchVal = document.getElementById('searchSpecies').value;
-                        if(searchVal) { applyFilters(); } else { gridLayer.resetStyle(e.target); }
-                    } 
-                },
+                mouseout: (e) => { if(layer !== selectedLayer) { const searchVal = document.getElementById('searchSpecies').value; if(searchVal) { applyFilters(); } else { gridLayer.resetStyle(e.target); } } },
                 click: (e) => { L.DomEvent.stopPropagation(e); selectLocation(layer, id, 'grid'); }
             });
         }
@@ -433,12 +398,7 @@
             layer.bindTooltip(id, { sticky: true, className: 'grid-label', direction: 'top' });
             layer.on({
                 mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle({ weight: 5, color: '#8ecae6' }); },
-                mouseout: (e) => {
-                    if(layer !== selectedLayer) {
-                        const searchVal = document.getElementById('searchSpecies').value;
-                        if(searchVal) { applyFilters(); } else { riverLayer.resetStyle(e.target); }
-                    }
-                },
+                mouseout: (e) => { if(layer !== selectedLayer) { const searchVal = document.getElementById('searchSpecies').value; if(searchVal) { applyFilters(); } else { riverLayer.resetStyle(e.target); } } },
                 click: (e) => { L.DomEvent.stopPropagation(e); selectLocation(layer, id, 'river'); }
             });
         }
@@ -464,7 +424,6 @@
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
             const targetId = id.toString().toLowerCase().trim();
-            
             currentGridRawData = biodiversityData.filter(d => {
                 const dbPlot = d.Plot ? d.Plot.toString().toLowerCase().trim() : "";
                 return dbPlot === targetId;
@@ -483,7 +442,6 @@
             selectedLayerType = null;
             document.getElementById('empty-state').style.display = 'flex';
             document.getElementById('detail-content').style.display = 'none';
-            
             document.getElementById('searchSpecies').value = '';
             document.getElementById('clearSearch').style.display = 'none';
             document.getElementById('custom-dropdown').style.display = 'none';
@@ -594,9 +552,7 @@
             const fMonth = document.getElementById('tableFilterMonth').value;
             const fYear = document.getElementById('tableFilterYear').value;
             const filtered = currentGridRawData.filter(d => {
-                return (fTaxa === 'All' || d.Taxa === fTaxa) && 
-                       (fMonth === 'All' || d.Bulan === fMonth) && 
-                       (fYear === 'All' || d.Tahun == fYear);
+                return (fTaxa === 'All' || d.Taxa === fTaxa) && (fMonth === 'All' || d.Bulan === fMonth) && (fYear === 'All' || d.Tahun == fYear);
             });
             renderTable(filtered);
         }
@@ -633,12 +589,7 @@
                     
                     const row = `
                         <tr>
-                            <td>
-                                <strong class="clickable-species" onclick="showAnalytics('${r.Jenis}')" title="Click to view Analysis">
-                                    ${r.Jenis || '-'}
-                                </strong>
-                                <em>${r['Nama Ilmiah'] || '-'}</em>
-                            </td>
+                            <td><strong class="clickable-species" onclick="showAnalytics('${r.Jenis}')" title="Click to view Analysis">${r.Jenis || '-'}</strong><em>${r['Nama Ilmiah'] || '-'}</em></td>
                             <td>${r.Taxa || '-'}</td>
                             <td>${r.Jumlah || 1}</td>
                             <td>${r.Bulan || '-'}</td>
@@ -661,12 +612,11 @@
 
             title.innerText = `Analysis: ${speciesName}`;
             
-            // 2. Olah Data untuk Grafik Waktu (Trend)
             const timeMap = {};
             speciesData.forEach(d => {
                 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
                 const monthIndex = monthNames.indexOf(d.Bulan);
-                const sortKey = `${d.Tahun}-${String(monthIndex + 1).padStart(2, '0')}`; // YYYY-MM
+                const sortKey = `${d.Tahun}-${String(monthIndex + 1).padStart(2, '0')}`;
                 const displayLabel = `${d.Bulan} ${d.Tahun}`;
                 
                 if(!timeMap[sortKey]) timeMap[sortKey] = { label: displayLabel, count: 0 };
@@ -677,7 +627,6 @@
             const timeLabels = sortedTimeKeys.map(k => timeMap[k].label);
             const timeCounts = sortedTimeKeys.map(k => timeMap[k].count);
 
-            // 3. Olah Data untuk Grafik Lokasi (Top 5)
             const locMap = {};
             speciesData.forEach(d => {
                 const plot = d.Plot || "Unknown";
@@ -689,7 +638,6 @@
             const locLabels = sortedLocs.map(i => i[0]);
             const locCounts = sortedLocs.map(i => i[1]);
 
-            // 4. Render Chart (Trend)
             const ctxTrend = document.getElementById('trendChart').getContext('2d');
             if(trendChartInstance) trendChartInstance.destroy();
             
@@ -710,7 +658,6 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 5. Render Chart (Location)
             const ctxLoc = document.getElementById('locationChart').getContext('2d');
             if(locationChartInstance) locationChartInstance.destroy();
             
