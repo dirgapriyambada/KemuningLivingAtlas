@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* --- CSS STYLE (TIDAK BERUBAH DARI REQUEST KAMU) --- */
+        /* --- CSS STYLE (TIDAK BERUBAH) --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
         :root { --bg-dark: #1c2d15; --text-main: #162405; --accent: #c4ff9d; --muted: #6b7a63; }
         
@@ -135,7 +135,7 @@
         </div>
     </div>
 
-   <script>
+    <script>
         // --- 1. SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
@@ -152,69 +152,89 @@
             window.location.href = 'index.html';
         });
 
-        // --- 3. DATA & LOGIC ---
-        let biodiversityData = [];
+        // --- 3. DATA VARIABLES (SUDAH BERSIH) ---
+        // Kita siapkan 3 wadah untuk menampung data dari 3 View SQL
+        let dataMamalia = [];
+        let dataBurung = [];
+        let dataHerpet = [];
 
-        // Fungsi Helper: Cek apakah taxa masuk kategori Herpetofauna
-        function isHerpetofauna(taxaString) {
-            if (!taxaString) return false;
-            const t = taxaString.trim().toLowerCase();
-            return ['herpetofauna', 'reptil', 'reptilia', 'amfibi', 'amphibia'].some(k => t.includes(k));
+        // --- 4. DATA LOADING ---
+        async function loadAllData() {
+            // Load 3 tabel secara paralel agar cepat
+            await Promise.all([
+                loadMamalia(),
+                loadBurung(),
+                loadHerpet()
+            ]);
+            
+            updateCounts();
         }
 
-        async function loadBiodiversityData() {
-            try {
-                // PERBAIKAN 1: Tambahkan .range(0, 4999)
-                // Ini memaksa Supabase mengambil sampai 5000 baris (defaultnya cuma 1000)
-                const { data, error } = await supabaseClient
-                    .from('biodiversity_dashboard')
-                    .select('*')
-                    .range(0, 4999); 
+        async function loadMamalia() {
+            // Mengambil dari view_spesies_mamalia
+            const { data, error } = await supabaseClient
+                .from('view_spesies_mamalia') 
+                .select('*');
 
-                if (error) {
-                    console.error("Supabase Error:", error);
-                    return;
-                }
-
-                biodiversityData = data;
-                console.log("Data loaded:", biodiversityData.length, "rows");
-                updateCounts();
-
-            } catch (err) {
-                console.error("Fetch Error:", err);
-            }
+            if (!error) dataMamalia = data;
+            else console.error("Error Mamalia:", error);
         }
 
+        async function loadBurung() {
+            // Mengambil dari view_spesies_burung
+            const { data, error } = await supabaseClient
+                .from('view_spesies_burung')
+                .select('*');
+
+            if (!error) dataBurung = data;
+            else console.error("Error Burung:", error);
+        }
+
+        async function loadHerpet() {
+            // Mengambil dari view_spesies_herpetofauna
+            const { data, error } = await supabaseClient
+                .from('view_spesies_herpetofauna')
+                .select('*');
+
+            if (!error) dataHerpet = data;
+            else console.error("Error Herpet:", error);
+        }
+
+        // --- 5. LOGIC & COUNTING (SANGAT RINGAN) ---
         function updateCounts() {
-            // Filter Data Mentah
-            const mammals = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'mamalia');
-            const birds = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'burung');
-            const herps = biodiversityData.filter(d => isHerpetofauna(d.Taxa));
+            // Karena data dari SQL sudah bersih (Distinct),
+            // kita cukup hitung jumlah barisnya (.length)
+            const countM = dataMamalia.length;
+            const countB = dataBurung.length;
+            const countH = dataHerpet.length;
 
-            // PERBAIKAN 2: Hitung berdasarkan kolom 'Jenis' (bukan Nama Ilmiah)
-            // Ini agar sinkron dengan SQL atau Excel yang menghitung nama umum jika nama latin kosong
-            const countM = new Set(mammals.map(d => d.Jenis ? d.Jenis.trim() : 'Unknown').filter(x => x !== 'Unknown')).size;
-            const countB = new Set(birds.map(d => d.Jenis ? d.Jenis.trim() : 'Unknown').filter(x => x !== 'Unknown')).size;
-            const countH = new Set(herps.map(d => d.Jenis ? d.Jenis.trim() : 'Unknown').filter(x => x !== 'Unknown')).size;
-
-            // Animasi angka
             animateValue(document.getElementById('count-mamalia'), 0, countM, 1500);
             animateValue(document.getElementById('count-burung'), 0, countB, 1500);
             animateValue(document.getElementById('count-herpetofauna'), 0, countH, 1500);
         }
 
-        // --- 4. UI INTERACTION ---
+        // --- 6. UI INTERACTION ---
         const viewSelection = document.getElementById('view-selection');
         const viewList = document.getElementById('view-list');
         const taxaBigTitle = document.getElementById('taxa-big-title');
         const tableContent = document.getElementById('table-content');
 
         window.openList = function(taxa, cardElement) {
-            if (taxa === 'Mamalia') taxaBigTitle.textContent = 'Mammals List';
-            else if (taxa === 'Burung') taxaBigTitle.textContent = 'Birds List';
-            else taxaBigTitle.textContent = 'Herpetofauna List';
+            let dataToShow = [];
 
-            populateTable(taxa);
+            // Tentukan data mana yang ditampilkan berdasarkan kartu yang diklik
+            if (taxa === 'Mamalia') {
+                taxaBigTitle.textContent = 'Mammals List';
+                dataToShow = dataMamalia;
+            } else if (taxa === 'Burung') {
+                taxaBigTitle.textContent = 'Birds List';
+                dataToShow = dataBurung;
+            } else {
+                taxaBigTitle.textContent = 'Herpetofauna List';
+                dataToShow = dataHerpet;
+            }
+
+            populateTable(dataToShow);
             
             viewSelection.classList.add('hidden');
             viewList.classList.add('active');
@@ -225,38 +245,19 @@
             setTimeout(() => { viewSelection.classList.remove('hidden'); }, 300);
         };
 
-        function populateTable(taxa) {
+        function populateTable(dataArray) {
             tableContent.innerHTML = '';
-            
-            let filtered = [];
-            if (taxa === 'Herpetofauna') {
-                filtered = biodiversityData.filter(d => isHerpetofauna(d.Taxa));
-            } else {
-                filtered = biodiversityData.filter(d => 
-                    d.Taxa && d.Taxa.trim().toLowerCase() === taxa.trim().toLowerCase()
-                );
-            }
-            
-            // Sort Alphabetical berdasarkan JENIS
-            filtered.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
 
-            // HAPUS DUPLIKAT (Berdasarkan JENIS agar konsisten dengan angka di kartu)
-            const uniqueSpeciesMap = new Map();
-            filtered.forEach(item => {
-                // Gunakan JENIS sebagai kunci unik, jika kosong pakai Nama Ilmiah sebagai cadangan
-                const uniqueKey = item.Jenis || item['Nama Ilmiah'];
-                if (uniqueKey && !uniqueSpeciesMap.has(uniqueKey)) {
-                    uniqueSpeciesMap.set(uniqueKey, item);
-                }
-            });
-            const uniqueSpecies = Array.from(uniqueSpeciesMap.values());
+            // Sort Alphabetical biar rapi (A-Z)
+            dataArray.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
 
-            if (uniqueSpecies.length === 0) {
-                tableContent.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">No data found for this category.</div>';
+            if (dataArray.length === 0) {
+                tableContent.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">No data found.</div>';
                 return;
             }
 
-            uniqueSpecies.forEach(item => {
+            // Render ke tabel
+            dataArray.forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'table-row';
 
@@ -292,10 +293,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadBiodiversityData();
+            loadAllData();
         });
     </script>
 </body>
 </html>
-
-
