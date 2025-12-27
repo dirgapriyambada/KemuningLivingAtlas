@@ -87,7 +87,7 @@
     </nav>
 
     <div id="view-selection">
-        <h1 class="page-title">Our Wild Neighbors! (DEBUG)</h1>
+        <h1 class="page-title">Our Wild Neighbors!</h1>
         
         <div class="cards-container">
             <div class="taxa-card" onclick="openList('Mamalia', this)">
@@ -155,28 +155,23 @@
         let dataHerpet = [];
 
         async function loadAllData() {
-            console.log("Memulai loadAllData... (Versi Baru)"); // Cek Console browser (F12)
-
             await Promise.all([
                 loadMamalia(),
                 loadBurung(),
                 loadHerpet()
             ]);
-            
-            console.log("Semua data terload. Update tampilan...");
             updateCounts();
         }
 
         async function loadMamalia() {
-            // Mengambil dari view_species_mamalia (Bahasa Inggris)
             const { data, error } = await supabaseClient
                 .from('view_species_mamalia') 
                 .select('*');
 
-            if (error) console.error("Error Mamalia:", error);
-            else {
+            if (error) {
+                console.error("Error Mamalia (SQL Permission mungkin belum dibuka):", error);
+            } else {
                 dataMamalia = data;
-                console.log("Mamalia loaded:", data.length);
             }
         }
 
@@ -185,10 +180,10 @@
                 .from('view_species_burung')
                 .select('*');
 
-            if (error) console.error("Error Burung:", error);
-            else {
+            if (error) {
+                console.error("Error Burung:", error);
+            } else {
                 dataBurung = data;
-                console.log("Burung loaded:", data.length);
             }
         }
 
@@ -197,10 +192,10 @@
                 .from('view_species_herpetofauna')
                 .select('*');
 
-            if (error) console.error("Error Herpet:", error);
-            else {
+            if (error) {
+                console.error("Error Herpet:", error);
+            } else {
                 dataHerpet = data;
-                console.log("Herpet loaded:", data.length);
             }
         }
 
@@ -208,8 +203,6 @@
             const countM = dataMamalia.length;
             const countB = dataBurung.length;
             const countH = dataHerpet.length;
-
-            console.log(`Update Angka: M=${countM}, B=${countB}, H=${countH}`);
 
             animateValue(document.getElementById('count-mamalia'), 0, countM, 1500);
             animateValue(document.getElementById('count-burung'), 0, countB, 1500);
@@ -246,12 +239,23 @@
             setTimeout(() => { viewSelection.classList.remove('hidden'); }, 300);
         };
 
+        // FUNGSI HELPER AMAN (Handle huruf Besar/Kecil)
+        function safeGet(item, key1, key2) {
+            return item[key1] || item[key2] || '-';
+        }
+
         function populateTable(dataArray) {
             tableContent.innerHTML = '';
-            dataArray.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
+            
+            // Sort dengan aman
+            dataArray.sort((a, b) => {
+                const nameA = a.Jenis || a.jenis || '';
+                const nameB = b.Jenis || b.jenis || '';
+                return nameA.localeCompare(nameB);
+            });
 
             if (dataArray.length === 0) {
-                tableContent.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">No data found.</div>';
+                tableContent.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">No data found. (Check SQL Permissions)</div>';
                 return;
             }
 
@@ -259,12 +263,13 @@
                 const row = document.createElement('div');
                 row.className = 'table-row';
 
-                const commonName = item.Jenis || '-';
-                const englishName = item['Nama Inggris'] || '-';
-                const sciName = item['Nama Ilmiah'] || '-';
-                const family = item.Famili || '-';
-                const iucn = item['Status IUCN'] || '-';
-                const protection = item.Dilindungi || '-';
+                // Coba ambil "Jenis" (besar), kalau ga ada ambil "jenis" (kecil)
+                const commonName = safeGet(item, 'Jenis', 'jenis');
+                const englishName = safeGet(item, 'Nama Inggris', 'nama inggris');
+                const sciName = safeGet(item, 'Nama Ilmiah', 'nama ilmiah');
+                const family = safeGet(item, 'Famili', 'famili');
+                const iucn = safeGet(item, 'Status IUCN', 'status iucn');
+                const protection = safeGet(item, 'Dilindungi', 'dilindungi');
 
                 row.innerHTML = `
                     <div><strong>${commonName}</strong></div>
