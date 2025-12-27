@@ -20,12 +20,33 @@
         @font-face { font-family: 'SF Pro Text Thin'; src: url('assets/SF-Pro-Text-Thin.otf') format('opentype'); font-weight: 100; font-display: swap; }
 
         body, html { width: 100%; overflow-x: hidden; font-family: 'SF Pro Text', sans-serif; background: var(--bg-body); color: var(--primary-green); scroll-behavior: smooth; }
+        
+        /* NAVIGATION */
         nav { position: fixed; top: 0; left: 0; right: 0; height: 50px; display: flex; justify-content: center; align-items: center; background: #87CEA2; z-index: 2200; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .nav-links { display: flex; gap: 40px; align-items: center; }
         .nav-links a { color: #184D32; text-decoration: none; font-family: 'SF Pro Text', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s; }
         .nav-links a:hover, .nav-links a.active { font-weight: 800; opacity: 1; }
         .back-circle-btn { position: fixed; top: 10px; left: 20px; z-index: 2300; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.6); color: #184D32; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; transition: all 0.2s; }
         .back-circle-btn:hover { background: #fff; }
+
+        /* FULL SCREEN LOADING OVERLAY */
+        #loading-overlay {
+            position: fixed; top: 50px; left: 0; width: 100%; height: calc(100% - 50px);
+            background: #fff; z-index: 3000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 20px;
+            transition: opacity 0.5s ease;
+        }
+        .spinner-large {
+            width: 50px; height: 50px; border: 5px solid #f3f3f3; 
+            border-top: 5px solid var(--primary-green); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        #loading-text { font-family: 'SF Pro Display', sans-serif; font-size: 18px; color: var(--primary-green); font-weight: 600; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* DASHBOARD CONTENT (Hidden Initially) */
+        #dashboard-content { opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+        #dashboard-content.ready { opacity: 1; pointer-events: auto; }
 
         .stats-bar { position: fixed; top: 50px; left: 0; right: 0; height: 70px; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 2100; }
         .stats-group { display: flex; gap: 40px; align-items: center; }
@@ -87,20 +108,6 @@
         .leaflet-control-layers { border: none !important; border-radius: 8px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important; font-family: 'SF Pro Text', sans-serif !important; font-size: 11px !important; }
         .grid-label { background: transparent; border: none; box-shadow: none; color: #fff; font-weight: 700; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 
-        /* --- LOADING INDICATOR --- */
-        #loading-indicator {
-            position: fixed; top: 60px; right: 20px; 
-            background: #fff; padding: 10px 20px; border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-weight: bold; color: var(--primary-green);
-            display: flex; align-items: center; gap: 10px; z-index: 2500;
-            transition: opacity 0.3s; pointer-events: none;
-        }
-        .spinner {
-            width: 16px; height: 16px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-green);
-            border-radius: 50%; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         /* --- ANALYTICS MODAL CSS --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -144,6 +151,11 @@
 </head>
 
 <body>
+    <div id="loading-overlay">
+        <div class="spinner-large"></div>
+        <div id="loading-text">Fetching biodiversity data... This may take a moment.</div>
+    </div>
+
     <nav>
         <a href="explore.html" class="back-circle-btn">&larr;</a>
         <div class="nav-links">
@@ -154,95 +166,93 @@
         </div>
     </nav>
 
-    <div class="stats-bar">
-        <div class="stats-group">
-            <div class="stat-item">
-                <div class="icon-box"><img src="assets/icon_mammals.png" alt="Mammals" onerror="this.style.display='none'"></div>
-                <div class="stat-text"><h4>Mammals</h4><span id="stat-mammal">0</span></div>
-            </div>
-            <div class="stat-item">
-                <div class="icon-box"><img src="assets/icon_birds.png" alt="Birds" onerror="this.style.display='none'"></div>
-                <div class="stat-text"><h4>Birds</h4><span id="stat-bird">0</span></div>
-            </div>
-            <div class="stat-item">
-                <div class="icon-box"><img src="assets/icon_herp.png" alt="Herp" onerror="this.style.display='none'"></div>
-                <div class="stat-text"><h4>Herpetofauna</h4><span id="stat-herp">0</span></div>
-            </div>
-        </div>
-        <div class="last-monitoring">
-            <h4>Last Monitoring Date</h4>
-            <span id="last-monitoring-date">Loading...</span>
-        </div>
-    </div>
-
-    <div id="loading-indicator">
-        <div class="spinner"></div> Loading Data...
-    </div>
-
-    <div class="main-container">
-        <div class="map-section">
-            <div id="map"></div>
-            <div class="map-ui-overlay">
-                <div class="search-wrapper filter-item">
-                    <img src="assets/search.png" alt="Search" class="search-icon">
-                    <input type="text" id="searchSpecies" placeholder="Explore our biodiversity!" autocomplete="off">
-                    <button id="clearSearch" class="clear-btn">&times;</button>
-                    <div id="custom-dropdown" class="autocomplete-items"></div>
+    <div id="dashboard-content">
+        <div class="stats-bar">
+            <div class="stats-group">
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_mammals.png" alt="Mammals" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Mammals</h4><span id="stat-mammal">0</span></div>
                 </div>
-                <select id="filterMonth" class="filter-dropdown filter-item">
-                    <option value="All">Survey Month</option>
-                </select>
-                <select id="filterYear" class="filter-dropdown filter-item">
-                    <option value="All">Survey Year</option>
-                </select>
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_birds.png" alt="Birds" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Birds</h4><span id="stat-bird">0</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_herp.png" alt="Herp" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Herpetofauna</h4><span id="stat-herp">0</span></div>
+                </div>
+            </div>
+            <div class="last-monitoring">
+                <h4>Last Monitoring Date</h4>
+                <span id="last-monitoring-date">Loading...</span>
             </div>
         </div>
 
-        <div class="detail-section" id="detail-section">
-            <div class="empty-state" id="empty-state">
-                <span class="empty-text">NO LOCATION SELECTED</span>
+        <div class="main-container">
+            <div class="map-section">
+                <div id="map"></div>
+                <div class="map-ui-overlay">
+                    <div class="search-wrapper filter-item">
+                        <img src="assets/search.png" alt="Search" class="search-icon">
+                        <input type="text" id="searchSpecies" placeholder="Explore our biodiversity!" autocomplete="off">
+                        <button id="clearSearch" class="clear-btn">&times;</button>
+                        <div id="custom-dropdown" class="autocomplete-items"></div>
+                    </div>
+                    <select id="filterMonth" class="filter-dropdown filter-item">
+                        <option value="All">Survey Month</option>
+                    </select>
+                    <select id="filterYear" class="filter-dropdown filter-item">
+                        <option value="All">Survey Year</option>
+                    </select>
+                </div>
             </div>
-            <div id="detail-content" style="display: none; height: 100%; flex-direction: column;">
-                <div class="detail-header">
-                    <div>
-                        <h3 id="grid-title">Location - Species Observations</h3>
-                        <p>Detailed observations recorded in this survey location</p>
-                    </div>
+
+            <div class="detail-section" id="detail-section">
+                <div class="empty-state" id="empty-state">
+                    <span class="empty-text">NO LOCATION SELECTED</span>
                 </div>
-                <div class="table-filters">
-                    <div class="filter-chip-wrapper">
-                        <label>Taxa</label>
-                        <select id="tableFilterTaxa" class="table-select" onchange="applyTableFilters()">
-                            <option value="All">All</option>
-                        </select>
+                <div id="detail-content" style="display: none; height: 100%; flex-direction: column;">
+                    <div class="detail-header">
+                        <div>
+                            <h3 id="grid-title">Location - Species Observations</h3>
+                            <p>Detailed observations recorded in this survey location</p>
+                        </div>
                     </div>
-                    <div class="filter-chip-wrapper">
-                        <label>Survey Month</label>
-                        <select id="tableFilterMonth" class="table-select" onchange="applyTableFilters()">
-                            <option value="All">All</option>
-                        </select>
+                    <div class="table-filters">
+                        <div class="filter-chip-wrapper">
+                            <label>Taxa</label>
+                            <select id="tableFilterTaxa" class="table-select" onchange="applyTableFilters()">
+                                <option value="All">All</option>
+                            </select>
+                        </div>
+                        <div class="filter-chip-wrapper">
+                            <label>Survey Month</label>
+                            <select id="tableFilterMonth" class="table-select" onchange="applyTableFilters()">
+                                <option value="All">All</option>
+                            </select>
+                        </div>
+                        <div class="filter-chip-wrapper">
+                            <label>Survey Year</label>
+                            <select id="tableFilterYear" class="table-select" onchange="applyTableFilters()">
+                                <option value="All">All</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="filter-chip-wrapper">
-                        <label>Survey Year</label>
-                        <select id="tableFilterYear" class="table-select" onchange="applyTableFilters()">
-                            <option value="All">All</option>
-                        </select>
+                    <div class="data-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%;" onclick="sortGridData('Jenis')">Species</th>
+                                    <th style="width: 15%;" onclick="sortGridData('Taxa')">Taxa</th>
+                                    <th style="width: 10%;" onclick="sortGridData('Jumlah')">Individuals</th>
+                                    <th style="width: 15%;" onclick="sortGridData('Bulan')">Survey Month</th>
+                                    <th style="width: 10%;" onclick="sortGridData('Tahun')">Survey Year</th>
+                                    <th style="width: 20%;" onclick="sortGridData('Status IUCN')">IUCN Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
                     </div>
-                </div>
-                <div class="data-table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 30%;" onclick="sortGridData('Jenis')">Species</th>
-                                <th style="width: 15%;" onclick="sortGridData('Taxa')">Taxa</th>
-                                <th style="width: 10%;" onclick="sortGridData('Jumlah')">Individuals</th>
-                                <th style="width: 15%;" onclick="sortGridData('Bulan')">Survey Month</th>
-                                <th style="width: 10%;" onclick="sortGridData('Tahun')">Survey Year</th>
-                                <th style="width: 20%;" onclick="sortGridData('Status IUCN')">IUCN Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body"></tbody>
-                    </table>
                 </div>
             </div>
         </div>
@@ -290,16 +300,52 @@
         let sortDirection = 1;
         let trendChartInstance = null;
         let locationChartInstance = null;
-        let isDataLoaded = false;
+        let isDataReady = false;
 
         document.addEventListener('DOMContentLoaded', () => {
             initializeMap();
-            loadMapData();
+            loadFullData(); // FUNGSI LOAD UTAMA
             fetchHeaderStats(); 
             fetchLastMonitoring(); 
         });
 
-        // --- FETCH STATS & DATE ---
+        // --- 1. LOAD FULL DATA DENGAN LOADING SCREEN ---
+        async function loadFullData() {
+            try {
+                console.log("Memulai download data...");
+                
+                // Set Range 100.000 untuk memastikan semua data Herpetofauna terambil
+                const { data, error } = await dbClient
+                    .from('biodiversity_dashboard')
+                    .select('*')
+                    .range(0, 99999); 
+
+                if (error) throw error;
+
+                biodiversityData = data;
+                console.log(`Berhasil download ${data.length} baris data.`);
+                
+                // Debugging: Cek Herpetofauna
+                const herps = data.filter(d => d.Taxa === 'Herpetofauna');
+                console.log(`Jumlah Herpetofauna: ${herps.length}`);
+
+                populateDropdowns();
+                
+                // Hapus Loading Screen & Munculkan Dashboard
+                document.getElementById('loading-overlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    document.getElementById('dashboard-content').classList.add('ready');
+                    isDataReady = true;
+                }, 500);
+
+            } catch (err) {
+                console.error("GAGAL LOAD DATA:", err);
+                document.getElementById('loading-text').innerText = "Error loading data. Please refresh.";
+                document.getElementById('loading-text').style.color = "red";
+            }
+        }
+
         async function fetchHeaderStats() {
             try {
                 const { count: countM } = await dbClient.from('view_species_mamalia').select('*', { count: 'exact', head: true });
@@ -333,32 +379,6 @@
             window.requestAnimationFrame(step);
         }
 
-        // --- LOAD DATA (AMBIL 20.000 BARIS - PASTI AMAN) ---
-        async function loadMapData() {
-            // Tampilkan loading
-            document.getElementById('loading-indicator').style.opacity = '1';
-            
-            const { data, error } = await dbClient.from('biodiversity_dashboard').select('*').range(0, 19999); 
-            
-            if (error) { 
-                console.error("Error Supabase:", error); 
-                document.getElementById('loading-indicator').innerText = "Error Loading Data!";
-            } else { 
-                console.log(`DATA LOADED: Total ${data.length} baris.`);
-                
-                // Debugging di console untuk mengecek keberadaan herpetofauna
-                const checkHerp = data.filter(d => d.Taxa === 'Herpetofauna');
-                console.log(`Jumlah Herpetofauna terload: ${checkHerp.length}`);
-                
-                biodiversityData = data; 
-                populateDropdowns(); 
-                isDataLoaded = true;
-                
-                // Sembunyikan loading
-                document.getElementById('loading-indicator').style.opacity = '0';
-            }
-        }
-
         function initializeMap() {
             const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' });
             const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
@@ -385,39 +405,38 @@
                 map.fitBounds(gridLayer.getBounds());
             });
 
-            map.on('click', () => { resetSelection(); });
+            map.on('click', () => { if(isDataReady) resetSelection(); });
         }
 
-        // LOGIKA KLIK GRID
         function onEachGrid(feature, layer) {
             const id = feature.properties.Name; 
             layer.bindTooltip(id, { permanent: true, direction: 'center', className: 'grid-label' });
             layer.on({
-                mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle({ weight: 2, color: '#fff', fillOpacity: 0.4 }); },
-                mouseout: (e) => { if(layer !== selectedLayer) { const val = document.getElementById('searchSpecies').value; if(val) { applyFilters(); } else { gridLayer.resetStyle(e.target); } } },
-                click: (e) => { L.DomEvent.stopPropagation(e); selectLocation(layer, id, 'grid'); }
+                mouseover: (e) => { if(isDataReady && layer !== selectedLayer) e.target.setStyle({ weight: 2, color: '#fff', fillOpacity: 0.4 }); },
+                mouseout: (e) => { if(isDataReady && layer !== selectedLayer) { const val = document.getElementById('searchSpecies').value; if(val) { applyFilters(); } else { gridLayer.resetStyle(e.target); } } },
+                click: (e) => { 
+                    if(!isDataReady) return;
+                    L.DomEvent.stopPropagation(e); 
+                    selectLocation(layer, id, 'grid'); 
+                }
             });
         }
 
-        // LOGIKA KLIK SUNGAI (Langsung ambil properti "Sungai")
         function onEachRiver(feature, layer) {
-            // Ambil Nama dari properti "Sungai" di GeoJSON
-            const id = feature.properties.Sungai;
+            const id = feature.properties.Sungai || feature.properties.Name || "River";
             layer.bindTooltip(id, { sticky: true, className: 'grid-label', direction: 'top' });
             layer.on({
-                mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle({ weight: 5, color: '#8ecae6' }); },
-                mouseout: (e) => { if(layer !== selectedLayer) { const val = document.getElementById('searchSpecies').value; if(val) { applyFilters(); } else { riverLayer.resetStyle(e.target); } } },
-                click: (e) => { L.DomEvent.stopPropagation(e); selectLocation(layer, id, 'river'); }
+                mouseover: (e) => { if(isDataReady && layer !== selectedLayer) e.target.setStyle({ weight: 5, color: '#8ecae6' }); },
+                mouseout: (e) => { if(isDataReady && layer !== selectedLayer) { const val = document.getElementById('searchSpecies').value; if(val) { applyFilters(); } else { riverLayer.resetStyle(e.target); } } },
+                click: (e) => { 
+                    if(!isDataReady) return;
+                    L.DomEvent.stopPropagation(e); 
+                    selectLocation(layer, id, 'river'); 
+                }
             });
         }
 
-        // --- FUNGSI KLIK UTAMA ---
         function selectLocation(layer, id, type) {
-            if (!isDataLoaded) {
-                alert("Data is still loading, please wait...");
-                return;
-            }
-
             if (selectedLayer) {
                 if (selectedLayerType === 'grid') gridLayer.resetStyle(selectedLayer);
                 if (selectedLayerType === 'river') riverLayer.resetStyle(selectedLayer);
@@ -437,19 +456,15 @@
             document.getElementById('detail-content').style.display = 'flex';
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
-            // PEMBERSIHAN STRING (Trim & Lowercase saja untuk pencocokan)
             const targetId = id.toString().toLowerCase().trim();
-            
-            console.log(`KLIK PETA: "${id}" -> MENCARI DI DB: "${targetId}"`);
+            console.log(`Klik Peta: "${targetId}"`);
 
             currentGridRawData = biodiversityData.filter(d => {
                 if (!d.Plot) return false;
-                const dbPlot = d.Plot.toString().toLowerCase().trim();
-                return dbPlot === targetId;
+                return d.Plot.toString().toLowerCase().trim() === targetId;
             });
             
-            console.log(`HASIL: ${currentGridRawData.length} data ditemukan.`);
-            
+            console.log(`Ditemukan: ${currentGridRawData.length} data.`);
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
