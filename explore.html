@@ -140,7 +140,7 @@
         const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
         
-        // FIX ERROR: Ganti nama variabel jadi 'supabaseClient' agar tidak tabrakan dengan library 'supabase'
+        // PERBAIKAN: Ganti nama variabel jadi 'supabaseClient' (Bukan 'supabase')
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- 2. GATEKEEPER ---
@@ -158,7 +158,7 @@
 
         async function loadBiodiversityData() {
             try {
-                // Gunakan 'supabaseClient' di sini, BUKAN 'supabase'
+                // PERBAIKAN: Gunakan 'supabaseClient' di sini
                 const { data, error } = await supabaseClient
                     .from('biodiversity_dashboard')
                     .select('*');
@@ -178,12 +178,10 @@
         }
 
         function updateCounts() {
-            // Hitung jumlah spesies unik dengan aman (handle spasi & huruf besar/kecil)
             const mammals = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'mamalia');
             const birds = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'burung');
             const herps = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'herpetofauna');
 
-            // Set Data Unik berdasarkan "Nama Ilmiah"
             const countM = new Set(mammals.map(d => d['Nama Ilmiah'])).size;
             const countB = new Set(birds.map(d => d['Nama Ilmiah'])).size;
             const countH = new Set(herps.map(d => d['Nama Ilmiah'])).size;
@@ -193,13 +191,12 @@
             animateValue(document.getElementById('count-herpetofauna'), 0, countH, 1500);
         }
 
-        // --- 4. UI INTERACTION (openList DEFINISI DISINI) ---
+        // --- 4. UI INTERACTION ---
         const viewSelection = document.getElementById('view-selection');
         const viewList = document.getElementById('view-list');
         const taxaBigTitle = document.getElementById('taxa-big-title');
         const tableContent = document.getElementById('table-content');
 
-        // Fungsi Global agar bisa dipanggil onclick di HTML
         window.openList = function(taxa, cardElement) {
             if (taxa === 'Mamalia') taxaBigTitle.textContent = 'Mammals List';
             else if (taxa === 'Burung') taxaBigTitle.textContent = 'Birds List';
@@ -219,15 +216,12 @@
         function populateTable(taxa) {
             tableContent.innerHTML = '';
             
-            // Filter Data (Case Insensitive & Trim)
             const filtered = biodiversityData.filter(d => 
                 d.Taxa && d.Taxa.trim().toLowerCase() === taxa.trim().toLowerCase()
             );
             
-            // Sort A-Z
             filtered.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
 
-            // Hapus duplikat
             const uniqueSpecies = [...new Map(filtered.map(item => [item['Nama Ilmiah'], item])).values()];
 
             if (uniqueSpecies.length === 0) {
@@ -239,7 +233,6 @@
                 const row = document.createElement('div');
                 row.className = 'table-row';
 
-                // Mapping sesuai kolom di SQL View kamu
                 const commonName = item.Jenis || '-';
                 const englishName = item['Nama Inggris'] || '-';
                 const sciName = item['Nama Ilmiah'] || '-';
@@ -271,11 +264,9 @@
             window.requestAnimationFrame(step);
         }
 
-        // --- INIT ---
         document.addEventListener('DOMContentLoaded', () => {
             loadBiodiversityData();
         });
-
     </script>
 </body>
 </html>
