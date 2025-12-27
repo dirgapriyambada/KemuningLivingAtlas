@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* --- CSS STYLE (TIDAK BERUBAH) --- */
+        /* --- CSS SAMA SEPERTI SEBELUMNYA --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
         :root { --bg-dark: #1c2d15; --text-main: #162405; --accent: #c4ff9d; --muted: #6b7a63; }
         
@@ -87,7 +87,7 @@
     </nav>
 
     <div id="view-selection">
-        <h1 class="page-title">Our Wild Neighbors!</h1>
+        <h1 class="page-title">Our Wild Neighbors! (DEBUG)</h1>
         
         <div class="cards-container">
             <div class="taxa-card" onclick="openList('Mamalia', this)">
@@ -136,13 +136,11 @@
     </div>
 
     <script>
-        // --- 1. SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- 2. GATEKEEPER ---
         if (sessionStorage.getItem('isLoggedIn') !== 'true') {
             window.location.href = 'index.html';
         }
@@ -152,68 +150,72 @@
             window.location.href = 'index.html';
         });
 
-        // --- 3. DATA VARIABLES (SUDAH BERSIH) ---
-        // Kita siapkan 3 wadah untuk menampung data dari 3 View SQL
         let dataMamalia = [];
         let dataBurung = [];
         let dataHerpet = [];
 
-        // --- 4. DATA LOADING ---
         async function loadAllData() {
-            // Load 3 tabel secara paralel agar cepat
+            console.log("Memulai loadAllData... (Versi Baru)"); // Cek Console browser (F12)
+
             await Promise.all([
                 loadMamalia(),
                 loadBurung(),
                 loadHerpet()
             ]);
             
+            console.log("Semua data terload. Update tampilan...");
             updateCounts();
         }
 
         async function loadMamalia() {
-            // Mengambil dari view_spesies_mamalia
+            // Mengambil dari view_species_mamalia (Bahasa Inggris)
             const { data, error } = await supabaseClient
-                .from('view_spesies_mamalia') 
+                .from('view_species_mamalia') 
                 .select('*');
 
-            if (!error) dataMamalia = data;
-            else console.error("Error Mamalia:", error);
+            if (error) console.error("Error Mamalia:", error);
+            else {
+                dataMamalia = data;
+                console.log("Mamalia loaded:", data.length);
+            }
         }
 
         async function loadBurung() {
-            // Mengambil dari view_spesies_burung
             const { data, error } = await supabaseClient
-                .from('view_spesies_burung')
+                .from('view_species_burung')
                 .select('*');
 
-            if (!error) dataBurung = data;
-            else console.error("Error Burung:", error);
+            if (error) console.error("Error Burung:", error);
+            else {
+                dataBurung = data;
+                console.log("Burung loaded:", data.length);
+            }
         }
 
         async function loadHerpet() {
-            // Mengambil dari view_spesies_herpetofauna
             const { data, error } = await supabaseClient
-                .from('view_spesies_herpetofauna')
+                .from('view_species_herpetofauna')
                 .select('*');
 
-            if (!error) dataHerpet = data;
-            else console.error("Error Herpet:", error);
+            if (error) console.error("Error Herpet:", error);
+            else {
+                dataHerpet = data;
+                console.log("Herpet loaded:", data.length);
+            }
         }
 
-        // --- 5. LOGIC & COUNTING (SANGAT RINGAN) ---
         function updateCounts() {
-            // Karena data dari SQL sudah bersih (Distinct),
-            // kita cukup hitung jumlah barisnya (.length)
             const countM = dataMamalia.length;
             const countB = dataBurung.length;
             const countH = dataHerpet.length;
+
+            console.log(`Update Angka: M=${countM}, B=${countB}, H=${countH}`);
 
             animateValue(document.getElementById('count-mamalia'), 0, countM, 1500);
             animateValue(document.getElementById('count-burung'), 0, countB, 1500);
             animateValue(document.getElementById('count-herpetofauna'), 0, countH, 1500);
         }
 
-        // --- 6. UI INTERACTION ---
         const viewSelection = document.getElementById('view-selection');
         const viewList = document.getElementById('view-list');
         const taxaBigTitle = document.getElementById('taxa-big-title');
@@ -222,7 +224,6 @@
         window.openList = function(taxa, cardElement) {
             let dataToShow = [];
 
-            // Tentukan data mana yang ditampilkan berdasarkan kartu yang diklik
             if (taxa === 'Mamalia') {
                 taxaBigTitle.textContent = 'Mammals List';
                 dataToShow = dataMamalia;
@@ -247,8 +248,6 @@
 
         function populateTable(dataArray) {
             tableContent.innerHTML = '';
-
-            // Sort Alphabetical biar rapi (A-Z)
             dataArray.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
 
             if (dataArray.length === 0) {
@@ -256,7 +255,6 @@
                 return;
             }
 
-            // Render ke tabel
             dataArray.forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'table-row';
