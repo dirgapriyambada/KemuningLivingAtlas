@@ -136,12 +136,12 @@
     </div>
 
     <script>
-        // --- 1. SUPABASE CONFIGURATION (HANYA SEKALI DEFINISI DISINI) ---
-        // MASUKKAN URL DAN KEY SUPABASE KAMU DI BAWAH INI
+        // --- 1. SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // FIX ERROR: Ganti nama variabel jadi 'supabaseClient' agar tidak tabrakan dengan library 'supabase'
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- 2. GATEKEEPER ---
         if (sessionStorage.getItem('isLoggedIn') !== 'true') {
@@ -158,8 +158,8 @@
 
         async function loadBiodiversityData() {
             try {
-                // Mengambil data dari VIEW SQL yang kamu buat
-                const { data, error } = await supabase
+                // Gunakan 'supabaseClient' di sini, BUKAN 'supabase'
+                const { data, error } = await supabaseClient
                     .from('biodiversity_dashboard')
                     .select('*');
 
