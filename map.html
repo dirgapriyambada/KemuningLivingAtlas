@@ -280,7 +280,6 @@
             fetchLastMonitoring(); 
         });
 
-        // --- FETCH STATS & DATE ---
         async function fetchHeaderStats() {
             try {
                 const { count: countM } = await dbClient.from('view_species_mamalia').select('*', { count: 'exact', head: true });
@@ -314,20 +313,13 @@
             window.requestAnimationFrame(step);
         }
 
-        // --- LOAD DATA ---
-        // KUNCI PERBAIKAN: Set range sangat besar agar dianggap "No Limit"
-        // Ini memastikan data Herpetofauna (yang mungkin ada di urutan bawah) tetap terambil.
+        // --- LOAD DATA (LIMIT 100.000 BARIS - PASTI KEANGKUT SEMUA) ---
         async function loadMapData() {
-            const { data, error } = await dbClient
-                .from('biodiversity_dashboard')
-                .select('*')
-                .range(0, 99999); // SET KE 100.000 (SANGAT AMAN)
-            
-            if (error) { 
-                console.error("Error Supabase:", error); 
-            } else { 
-                console.log("Total Data Terload:", data.length);
+            const { data, error } = await dbClient.from('biodiversity_dashboard').select('*').range(0, 99999); 
+            if (error) { console.error("Error Supabase:", error); } 
+            else { 
                 biodiversityData = data; 
+                console.log(`DATA LOADED: Total ${data.length} baris.`);
                 populateDropdowns(); 
             }
         }
@@ -361,6 +353,7 @@
             map.on('click', () => { resetSelection(); });
         }
 
+        // LOGIKA KLIK GRID
         function onEachGrid(feature, layer) {
             const id = feature.properties.Name; 
             layer.bindTooltip(id, { permanent: true, direction: 'center', className: 'grid-label' });
@@ -371,9 +364,10 @@
             });
         }
 
+        // LOGIKA KLIK SUNGAI (SESUAI REQUEST GEOJSON: properties.Sungai)
         function onEachRiver(feature, layer) {
-            // Logika Sesuai Permintaan: Baca langsung nama sungai
-            const id = feature.properties.Sungai || feature.properties.Name || "River";
+            // Ambil Nama dari properti "Sungai" yang kamu tunjukkan tadi
+            const id = feature.properties.Sungai;
             layer.bindTooltip(id, { sticky: true, className: 'grid-label', direction: 'top' });
             layer.on({
                 mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle({ weight: 5, color: '#8ecae6' }); },
@@ -402,19 +396,23 @@
             document.getElementById('detail-content').style.display = 'flex';
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
-            // LOGIKA PENTING: Mencocokkan ID Peta dengan Kolom Plot di DB
-            const targetId = id.toString().trim(); // Hapus spasi jaga-jaga
+            // LOGIKA FILTER: SAMA PERSIS / EXACT MATCH
+            // Tapi pakai trim() dan toLowerCase() jaga-jaga human error di DB
+            const targetId = id.toString().toLowerCase().trim();
             
-            console.log("Klik ID:", targetId);
+            console.log(`KLIK PETA: "${id}" -> MENCARI DI DB: "${targetId}"`);
 
             currentGridRawData = biodiversityData.filter(d => {
                 if (!d.Plot) return false;
-                // Cocokkan persis (setelah di-trim spasi)
-                return d.Plot.toString().trim() === targetId;
+                // Ambil Plot dari Database, kecilkan huruf, buang spasi (Cleaning)
+                const dbPlot = d.Plot.toString().toLowerCase().trim();
+                
+                // Bandingkan!
+                return dbPlot === targetId;
             });
             
-            console.log("Data ditemukan:", currentGridRawData.length);
-
+            console.log(`HASIL: ${currentGridRawData.length} data ditemukan.`);
+            
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
@@ -482,8 +480,8 @@
                 const activePlots = new Set(filtered.map(d => d.Plot));
                 if(gridLayer) gridLayer.eachLayer(layer => { if (activePlots.has(layer.feature.properties.Name)) layer.setStyle({ fillColor: '#c4ff9d', fillOpacity: 0.5, color: '#fff', weight: 2 }); });
                 if(riverLayer) riverLayer.eachLayer(layer => { 
-                    const riverName = layer.feature.properties.Sungai || layer.feature.properties.Name;
-                    const isMatch = Array.from(activePlots).some(plot => plot && riverName && plot.toLowerCase().trim() === riverName.toLowerCase().trim());
+                    const riverName = layer.feature.properties.Sungai; // PENTING: GUNAKAN KEY "Sungai"
+                    const isMatch = activePlots.has(riverName);
                     if (isMatch) layer.setStyle({ color: '#c4ff9d', weight: 5, opacity: 1 });
                 });
             }
