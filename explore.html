@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* --- CSS STYLE (TIDAK BERUBAH) --- */
+        /* --- CSS STYLE (TIDAK BERUBAH DARI REQUEST KAMU) --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
         :root { --bg-dark: #1c2d15; --text-main: #162405; --accent: #c4ff9d; --muted: #6b7a63; }
         
@@ -140,7 +140,6 @@
         const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
         
-        // PERBAIKAN: Ganti nama variabel jadi 'supabaseClient' (Bukan 'supabase')
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- 2. GATEKEEPER ---
@@ -156,9 +155,16 @@
         // --- 3. DATA & LOGIC ---
         let biodiversityData = [];
 
+        // Fungsi Helper: Cek apakah taxa masuk kategori Herpetofauna (termasuk Reptil/Amfibi)
+        function isHerpetofauna(taxaString) {
+            if (!taxaString) return false;
+            const t = taxaString.trim().toLowerCase();
+            return ['herpetofauna', 'reptil', 'reptilia', 'amfibi', 'amphibia'].some(k => t.includes(k));
+        }
+
         async function loadBiodiversityData() {
             try {
-                // PERBAIKAN: Gunakan 'supabaseClient' di sini
+                // Ambil semua data (Asumsi data < 2000 baris, aman untuk client-side)
                 const { data, error } = await supabaseClient
                     .from('biodiversity_dashboard')
                     .select('*');
@@ -178,14 +184,19 @@
         }
 
         function updateCounts() {
+            // Filter Data Mentah
             const mammals = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'mamalia');
             const birds = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'burung');
-            const herps = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'herpetofauna');
+            // Filter Herpet menggunakan fungsi helper pintar (menggabungkan Reptil & Amfibi)
+            const herps = biodiversityData.filter(d => isHerpetofauna(d.Taxa));
 
+            // Hitung Spesies Unik (DISTINCT) berdasarkan Nama Ilmiah
+            // Menggunakan Set untuk membuang duplikat otomatis
             const countM = new Set(mammals.map(d => d['Nama Ilmiah'])).size;
             const countB = new Set(birds.map(d => d['Nama Ilmiah'])).size;
             const countH = new Set(herps.map(d => d['Nama Ilmiah'])).size;
 
+            // Animasi angka
             animateValue(document.getElementById('count-mamalia'), 0, countM, 1500);
             animateValue(document.getElementById('count-burung'), 0, countB, 1500);
             animateValue(document.getElementById('count-herpetofauna'), 0, countH, 1500);
@@ -216,13 +227,29 @@
         function populateTable(taxa) {
             tableContent.innerHTML = '';
             
-            const filtered = biodiversityData.filter(d => 
-                d.Taxa && d.Taxa.trim().toLowerCase() === taxa.trim().toLowerCase()
-            );
+            let filtered = [];
             
+            // Filter yang fleksibel
+            if (taxa === 'Herpetofauna') {
+                filtered = biodiversityData.filter(d => isHerpetofauna(d.Taxa));
+            } else {
+                filtered = biodiversityData.filter(d => 
+                    d.Taxa && d.Taxa.trim().toLowerCase() === taxa.trim().toLowerCase()
+                );
+            }
+            
+            // Sort Alphabetical
             filtered.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
 
-            const uniqueSpecies = [...new Map(filtered.map(item => [item['Nama Ilmiah'], item])).values()];
+            // HAPUS DUPLIKAT (Hanya tampilkan 1 baris per Nama Ilmiah)
+            const uniqueSpeciesMap = new Map();
+            filtered.forEach(item => {
+                const sciName = item['Nama Ilmiah'];
+                if (sciName && !uniqueSpeciesMap.has(sciName)) {
+                    uniqueSpeciesMap.set(sciName, item);
+                }
+            });
+            const uniqueSpecies = Array.from(uniqueSpeciesMap.values());
 
             if (uniqueSpecies.length === 0) {
                 tableContent.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">No data found for this category.</div>';
