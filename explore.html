@@ -135,7 +135,7 @@
         </div>
     </div>
 
-    <script>
+   <script>
         // --- 1. SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
@@ -155,7 +155,7 @@
         // --- 3. DATA & LOGIC ---
         let biodiversityData = [];
 
-        // Fungsi Helper: Cek apakah taxa masuk kategori Herpetofauna (termasuk Reptil/Amfibi)
+        // Fungsi Helper: Cek apakah taxa masuk kategori Herpetofauna
         function isHerpetofauna(taxaString) {
             if (!taxaString) return false;
             const t = taxaString.trim().toLowerCase();
@@ -164,10 +164,12 @@
 
         async function loadBiodiversityData() {
             try {
-                // Ambil semua data (Asumsi data < 2000 baris, aman untuk client-side)
+                // PERBAIKAN 1: Tambahkan .range(0, 4999)
+                // Ini memaksa Supabase mengambil sampai 5000 baris (defaultnya cuma 1000)
                 const { data, error } = await supabaseClient
                     .from('biodiversity_dashboard')
-                    .select('*');
+                    .select('*')
+                    .range(0, 4999); 
 
                 if (error) {
                     console.error("Supabase Error:", error);
@@ -187,14 +189,13 @@
             // Filter Data Mentah
             const mammals = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'mamalia');
             const birds = biodiversityData.filter(d => d.Taxa && d.Taxa.trim().toLowerCase() === 'burung');
-            // Filter Herpet menggunakan fungsi helper pintar (menggabungkan Reptil & Amfibi)
             const herps = biodiversityData.filter(d => isHerpetofauna(d.Taxa));
 
-            // Hitung Spesies Unik (DISTINCT) berdasarkan Nama Ilmiah
-            // Menggunakan Set untuk membuang duplikat otomatis
-            const countM = new Set(mammals.map(d => d['Nama Ilmiah'])).size;
-            const countB = new Set(birds.map(d => d['Nama Ilmiah'])).size;
-            const countH = new Set(herps.map(d => d['Nama Ilmiah'])).size;
+            // PERBAIKAN 2: Hitung berdasarkan kolom 'Jenis' (bukan Nama Ilmiah)
+            // Ini agar sinkron dengan SQL atau Excel yang menghitung nama umum jika nama latin kosong
+            const countM = new Set(mammals.map(d => d.Jenis ? d.Jenis.trim() : 'Unknown').filter(x => x !== 'Unknown')).size;
+            const countB = new Set(birds.map(d => d.Jenis ? d.Jenis.trim() : 'Unknown').filter(x => x !== 'Unknown')).size;
+            const countH = new Set(herps.map(d => d.Jenis ? d.Jenis.trim() : 'Unknown').filter(x => x !== 'Unknown')).size;
 
             // Animasi angka
             animateValue(document.getElementById('count-mamalia'), 0, countM, 1500);
@@ -228,8 +229,6 @@
             tableContent.innerHTML = '';
             
             let filtered = [];
-            
-            // Filter yang fleksibel
             if (taxa === 'Herpetofauna') {
                 filtered = biodiversityData.filter(d => isHerpetofauna(d.Taxa));
             } else {
@@ -238,15 +237,16 @@
                 );
             }
             
-            // Sort Alphabetical
+            // Sort Alphabetical berdasarkan JENIS
             filtered.sort((a, b) => (a.Jenis || '').localeCompare(b.Jenis || ''));
 
-            // HAPUS DUPLIKAT (Hanya tampilkan 1 baris per Nama Ilmiah)
+            // HAPUS DUPLIKAT (Berdasarkan JENIS agar konsisten dengan angka di kartu)
             const uniqueSpeciesMap = new Map();
             filtered.forEach(item => {
-                const sciName = item['Nama Ilmiah'];
-                if (sciName && !uniqueSpeciesMap.has(sciName)) {
-                    uniqueSpeciesMap.set(sciName, item);
+                // Gunakan JENIS sebagai kunci unik, jika kosong pakai Nama Ilmiah sebagai cadangan
+                const uniqueKey = item.Jenis || item['Nama Ilmiah'];
+                if (uniqueKey && !uniqueSpeciesMap.has(uniqueKey)) {
+                    uniqueSpeciesMap.set(uniqueKey, item);
                 }
             });
             const uniqueSpecies = Array.from(uniqueSpeciesMap.values());
@@ -297,3 +297,4 @@
     </script>
 </body>
 </html>
+
