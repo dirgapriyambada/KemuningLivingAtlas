@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        /* --- CSS TETAP SAMA --- */
+        /* --- CSS STYLE --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
         :root {
             --primary-green: #184D32; --secondary-text: #87CEA2; --monitoring-text: #4AA46F;
@@ -92,13 +92,9 @@
         .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .data-table th { text-align: left; padding: 15px 0; border-bottom: 2px solid #f0f0f0; font-size: 11px; color: var(--primary-green); font-weight: 700; text-transform: uppercase; cursor: pointer; user-select: none; transition: color 0.2s; }
         .data-table th:hover { color: #2E7D32; }
-        .data-table th::after { content: ' ↕'; opacity: 0.3; font-size: 10px; }
         .data-table td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px; color: #333; }
         .data-table td strong { font-weight: 700; color: var(--primary-green); display: block; }
-        .data-table td strong:hover { color: #2E7D32; text-decoration: underline; }
         .clickable-species { cursor: pointer; }
-        
-        .data-table td em { font-size: 11px; color: #999; font-style: italic; }
         .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; }
         .empty-state { display: flex; justify-content: center; align-items: center; height: 50vh; width: 100%; }
         .empty-text { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 24px; color: var(--primary-green); letter-spacing: 1px; opacity: 0.6; }
@@ -239,12 +235,14 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 30%;" onclick="sortGridData('Jenis')">Species</th>
-                                    <th style="width: 15%;" onclick="sortGridData('Taxa')">Taxa</th>
-                                    <th style="width: 10%;" onclick="sortGridData('Jumlah')">Individuals</th>
-                                    <th style="width: 15%;" onclick="sortGridData('Bulan')">Survey Month</th>
-                                    <th style="width: 10%;" onclick="sortGridData('Tahun')">Survey Year</th>
-                                    <th style="width: 20%;" onclick="sortGridData('Status IUCN')">IUCN Status</th>
+                                    <th style="width: 25%;" onclick="sortGridData('Jenis')">Species</th>
+                                    <th style="width: 10%;" onclick="sortGridData('Taxa')">Taxa</th>
+                                    <th style="width: 8%;" onclick="sortGridData('Jumlah')">Count</th>
+                                    <th style="width: 15%;">Behavior</th>
+                                    <th style="width: 15%;">Encounter</th>
+                                    
+                                    <th style="width: 12%;" onclick="sortGridData('Bulan')">Month</th>
+                                    <th style="width: 15%;" onclick="sortGridData('Status IUCN')">IUCN</th>
                                 </tr>
                             </thead>
                             <tbody id="table-body"></tbody>
@@ -304,39 +302,68 @@
             loadFullData(); 
             fetchHeaderStats(); 
             fetchLastMonitoring(); 
+
+            // --- REALTIME LISTENER (LIVE UPDATE) ---
+            const mySubscription = dbClient
+            .channel('public:observations') 
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'observations' }, 
+                (payload) => {
+                    console.log('⚡ DATA BARU MASUK!', payload);
+                    showRealtimeNotification("New data received! Updating map...");
+                    loadFullData(); 
+                    fetchHeaderStats();
+                    fetchLastMonitoring();
+                }
+            )
+            .subscribe();
         });
+
+        // NOTIFIKASI TOAST (Hijau di pojok kanan)
+        function showRealtimeNotification(msg) {
+            const toast = document.createElement('div');
+            toast.innerText = msg;
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.right = '20px';
+            toast.style.background = '#184D32';
+            toast.style.color = '#fff';
+            toast.style.padding = '15px 25px';
+            toast.style.borderRadius = '50px';
+            toast.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+            toast.style.zIndex = '9999';
+            toast.style.fontFamily = 'SF Pro Text, sans-serif';
+            toast.style.fontWeight = '600';
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s ease';
+            
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '1'; }, 100);
+            setTimeout(() => { 
+                toast.style.opacity = '0'; 
+                setTimeout(() => { toast.remove(); }, 500);
+            }, 4000);
+        }
 
         // --- SAFE GET HELPER (KEBAL HURUF BESAR/KECIL) ---
         function getVal(item, key) {
-            // Coba ambil "Key" (Besar), "key" (Kecil), atau "KEY" (Kapital semua)
             return item[key] || item[key.toLowerCase()] || item[key.toUpperCase()] || null;
         }
 
         async function loadFullData() {
             try {
                 console.log("Memulai download data...");
-                // AMBIL DATA DENGAN RANGE MAXIMAL
                 const { data, error } = await dbClient.from('biodiversity_dashboard').select('*').range(0, 99999); 
-
                 if (error) throw error;
-
-                if (data && data.length > 0) {
-                    console.log("Sample Data Pertama (Cek Nama Kolom):", data[0]); // DEBUG CONSOLE
-                }
-
                 biodiversityData = data;
-                console.log(`Berhasil download ${data.length} baris data.`);
-                
                 populateDropdowns();
-                
-                // Hilangkan Loading Screen
                 document.getElementById('loading-overlay').style.opacity = '0';
                 setTimeout(() => {
                     document.getElementById('loading-overlay').style.display = 'none';
                     document.getElementById('dashboard-content').classList.add('ready');
                     isDataReady = true;
                 }, 500);
-
             } catch (err) {
                 console.error("GAGAL LOAD DATA:", err);
                 document.getElementById('loading-text').innerText = "Error loading data. Check console.";
@@ -385,18 +412,15 @@
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
             const overlays = {}; 
-            
             fetch('assets/rivers.geojson').then(r => r.json()).then(data => {
                 riverLayer = L.geoJSON(data, { style: { color: '#3498db', weight: 3, opacity: 0.8 }, onEachFeature: onEachRiver }).addTo(map);
                 riverLayer.bringToBack();
                 L.control.layers({ "Esri Satellite": esriSat, "OpenStreetMap": osm, "Dark Mode": cartoDark }, { "Rivers": riverLayer }, { position: 'bottomright' }).addTo(map);
             });
-
             fetch('assets/grids.geojson').then(r => r.json()).then(data => {
                 gridLayer = L.geoJSON(data, { style: { color: accentColor, weight: 1, opacity: 0.7, fillColor: accentColor, fillOpacity: 0.15 }, onEachFeature: onEachGrid }).addTo(map);
                 map.fitBounds(gridLayer.getBounds());
             });
-
             map.on('click', () => { if(isDataReady) resetSelection(); });
         }
 
@@ -411,7 +435,7 @@
         }
 
         function onEachRiver(feature, layer) {
-            const id = feature.properties.Sungai; // FIX: Ambil properti "Sungai"
+            const id = feature.properties.Sungai; 
             layer.bindTooltip(id, { sticky: true, className: 'grid-label', direction: 'top' });
             layer.on({
                 mouseover: (e) => { if(isDataReady && layer !== selectedLayer) e.target.setStyle({ weight: 5, color: '#8ecae6' }); },
@@ -441,17 +465,11 @@
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
             const targetId = id.toString().trim();
-            console.log(`Klik Peta: "${targetId}"`);
-
-            // --- FILTER MENGGUNAKAN SAFE GET (AMBIL KOLOM PLOT DENGAN AMAN) ---
             currentGridRawData = biodiversityData.filter(d => {
-                const dbPlot = getVal(d, 'Plot'); // Ambil kolom Plot / plot
+                const dbPlot = getVal(d, 'Plot');
                 if (!dbPlot) return false;
-                // Cocokkan persis
                 return dbPlot.toString().trim() === targetId;
             });
-            
-            console.log(`Ditemukan: ${currentGridRawData.length} data.`);
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
@@ -473,19 +491,14 @@
         }
 
         function populateDropdowns() {
-            // Gunakan getVal untuk mengambil Bulan & Tahun
             const months = [...new Set(biodiversityData.map(d => getVal(d, 'Bulan')))].filter(x => x).sort();
             const years = [...new Set(biodiversityData.map(d => getVal(d, 'Tahun')))].filter(x => x).sort();
-            
             const mSelect = document.getElementById('filterMonth');
             const ySelect = document.getElementById('filterYear');
-            
             mSelect.innerHTML = '<option value="All">Survey Month</option>';
             ySelect.innerHTML = '<option value="All">Survey Year</option>';
-
             months.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
             years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
-            
             mSelect.addEventListener('change', applyFilters);
             ySelect.addEventListener('change', applyFilters);
             document.getElementById('searchSpecies').addEventListener('input', applyFilters);
@@ -500,10 +513,8 @@
             clearBtn.style.display = val.length > 0 ? 'block' : 'none';
             dropdownList.innerHTML = '';
             if (!val) { dropdownList.style.display = 'none'; applyFilters(); return; }
-            
             const uniqueSpecies = [...new Set(biodiversityData.map(d => getVal(d, 'Jenis')))];
             const matches = uniqueSpecies.filter(s => s && s.toLowerCase().includes(val.toLowerCase()));
-            
             if (matches.length > 0) {
                 dropdownList.style.display = 'block';
                 matches.forEach(species => {
@@ -528,38 +539,29 @@
             const search = searchInput.value.toLowerCase();
             const month = document.getElementById('filterMonth').value;
             const year = document.getElementById('filterYear').value;
-            
             if(gridLayer) gridLayer.eachLayer(layer => { if(layer !== selectedLayer) gridLayer.resetStyle(layer); });
             if(riverLayer) riverLayer.eachLayer(layer => { if(layer !== selectedLayer) riverLayer.resetStyle(layer); });
-            
             const filtered = biodiversityData.filter(d => {
                 const jenis = getVal(d, 'Jenis') || '';
                 const namaIlmiah = getVal(d, 'Nama Ilmiah') || '';
                 const matchSearch = (jenis + ' ' + namaIlmiah).toLowerCase().includes(search);
-                
                 const dataBulan = getVal(d, 'Bulan');
                 const dataTahun = getVal(d, 'Tahun');
-
                 const matchMonth = month === 'All' || dataBulan === month;
                 const matchYear = year === 'All' || dataTahun == year;
                 return matchSearch && matchMonth && matchYear;
             });
-            
             if(search.length > 0 || month !== 'All' || year !== 'All') {
                 const activePlots = new Set(filtered.map(d => getVal(d, 'Plot')));
                 if(gridLayer) {
                     gridLayer.eachLayer(layer => {
-                        if (activePlots.has(layer.feature.properties.Name)) {
-                            layer.setStyle({ fillColor: '#c4ff9d', fillOpacity: 0.5, color: '#fff', weight: 2 });
-                        }
+                        if (activePlots.has(layer.feature.properties.Name)) layer.setStyle({ fillColor: '#c4ff9d', fillOpacity: 0.5, color: '#fff', weight: 2 });
                     });
                 }
                 if(riverLayer) {
                     riverLayer.eachLayer(layer => {
                         const riverName = layer.feature.properties.Sungai;
-                        if (activePlots.has(riverName)) {
-                            layer.setStyle({ color: '#c4ff9d', weight: 5, opacity: 1 });
-                        }
+                        if (activePlots.has(riverName)) layer.setStyle({ color: '#c4ff9d', weight: 5, opacity: 1 });
                     });
                 }
             }
@@ -569,15 +571,12 @@
             const taxaList = [...new Set(data.map(d => getVal(d, 'Taxa')))].sort();
             const monthList = [...new Set(data.map(d => getVal(d, 'Bulan')))].sort();
             const yearList = [...new Set(data.map(d => getVal(d, 'Tahun')))].sort();
-            
             const taxaSel = document.getElementById('tableFilterTaxa');
             const monthSel = document.getElementById('tableFilterMonth');
             const yearSel = document.getElementById('tableFilterYear');
-            
             taxaSel.innerHTML = '<option value="All">All</option>';
             monthSel.innerHTML = '<option value="All">All</option>';
             yearSel.innerHTML = '<option value="All">All</option>';
-            
             taxaList.forEach(t => taxaSel.innerHTML += `<option value="${t}">${t}</option>`);
             monthList.forEach(m => monthSel.innerHTML += `<option value="${m}">${m}</option>`);
             yearList.forEach(y => yearSel.innerHTML += `<option value="${y}">${y}</option>`);
@@ -588,15 +587,11 @@
             const fTaxa = document.getElementById('tableFilterTaxa').value;
             const fMonth = document.getElementById('tableFilterMonth').value;
             const fYear = document.getElementById('tableFilterYear').value;
-            
             const filtered = currentGridRawData.filter(d => {
                 const taxa = getVal(d, 'Taxa');
                 const bulan = getVal(d, 'Bulan');
                 const tahun = getVal(d, 'Tahun');
-
-                return (fTaxa === 'All' || taxa === fTaxa) && 
-                       (fMonth === 'All' || bulan === fMonth) && 
-                       (fYear === 'All' || tahun == fYear);
+                return (fTaxa === 'All' || taxa === fTaxa) && (fMonth === 'All' || bulan === fMonth) && (fYear === 'All' || tahun == fYear);
             });
             renderTable(filtered);
         }
@@ -607,7 +602,6 @@
             currentGridRawData.sort((a, b) => {
                 let valA = getVal(a, key) ? getVal(a, key).toString().toLowerCase() : '';
                 let valB = getVal(b, key) ? getVal(b, key).toString().toLowerCase() : '';
-                
                 if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') { valA = Number(valA); valB = Number(valB); }
                 if (valA < valB) return -1 * sortDirection;
                 if (valA > valB) return 1 * sortDirection;
@@ -616,12 +610,12 @@
             applyTableFilters();
         }
 
+        // --- RENDER TABLE (UPDATED: BEHAVIOR & ENCOUNTER) ---
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
-            
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No matching records.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px;">No matching records.</td></tr>';
             } else {
                 data.forEach(r => {
                     const iucn = getVal(r, 'Status IUCN') || 'NE';
@@ -632,13 +626,20 @@
                     else if(iucn.includes('NT')) badgeColor = iucnColors['NT'];
                     else if(iucn.includes('LC')) badgeColor = iucnColors['LC'];
                     
-                    // Ambil Data Pakai Safe Get
                     const jenis = getVal(r, 'Jenis');
                     const ilmiah = getVal(r, 'Nama Ilmiah');
                     const taxa = getVal(r, 'Taxa');
                     const jumlah = getVal(r, 'Jumlah');
                     const bulan = getVal(r, 'Bulan');
-                    const tahun = getVal(r, 'Tahun');
+
+                    // --- KOLOM BARU ---
+                    const behavior = getVal(r, 'behavior') || getVal(r, 'Perilaku') || '-';
+                    const encounter = getVal(r, 'encounter_type') || getVal(r, 'Tipe Jumpa') || '-';
+                    const otherEnc = getVal(r, 'other_encounter_type'); 
+                    let displayEncounter = encounter;
+                    if(encounter === 'Lainnya' && otherEnc) {
+                        displayEncounter = `${encounter} (${otherEnc})`;
+                    }
 
                     const row = `
                         <tr>
@@ -650,8 +651,9 @@
                             </td>
                             <td>${taxa || '-'}</td>
                             <td>${jumlah || 1}</td>
+                            <td>${behavior}</td>
+                            <td>${displayEncounter}</td>
                             <td>${bulan || '-'}</td>
-                            <td>${tahun || '-'}</td>
                             <td><span class="status-badge" style="background:${badgeColor}">${iucn}</span></td>
                         </tr>`;
                     tbody.innerHTML += row;
@@ -663,11 +665,8 @@
         function showAnalytics(speciesName) {
             const modal = document.getElementById('analyticsModal');
             const title = document.getElementById('analytics-title');
-            
             const speciesData = biodiversityData.filter(d => getVal(d, 'Jenis') === speciesName);
-            
             if(speciesData.length === 0) return;
-
             title.innerText = `Analysis: ${speciesName}`;
             
             const timeMap = {};
@@ -676,15 +675,12 @@
                 const bulan = getVal(d, 'Bulan');
                 const tahun = getVal(d, 'Tahun');
                 const jumlah = getVal(d, 'Jumlah');
-
                 const monthIndex = monthNames.indexOf(bulan);
                 const sortKey = `${tahun}-${String(monthIndex + 1).padStart(2, '0')}`;
                 const displayLabel = `${bulan} ${tahun}`;
-                
                 if(!timeMap[sortKey]) timeMap[sortKey] = { label: displayLabel, count: 0 };
                 timeMap[sortKey].count += (jumlah || 1);
             });
-            
             const sortedTimeKeys = Object.keys(timeMap).sort();
             const timeLabels = sortedTimeKeys.map(k => timeMap[k].label);
             const timeCounts = sortedTimeKeys.map(k => timeMap[k].count);
@@ -696,44 +692,28 @@
                 if(!locMap[plot]) locMap[plot] = 0;
                 locMap[plot] += (jumlah || 1);
             });
-            
             const sortedLocs = Object.entries(locMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
             const locLabels = sortedLocs.map(i => i[0]);
             const locCounts = sortedLocs.map(i => i[1]);
 
             const ctxTrend = document.getElementById('trendChart').getContext('2d');
             if(trendChartInstance) trendChartInstance.destroy();
-            
             trendChartInstance = new Chart(ctxTrend, {
                 type: 'line',
                 data: {
                     labels: timeLabels,
-                    datasets: [{
-                        label: 'Individuals Observed',
-                        data: timeCounts,
-                        borderColor: '#184D32',
-                        backgroundColor: 'rgba(24, 77, 50, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true
-                    }]
+                    datasets: [{ label: 'Individuals Observed', data: timeCounts, borderColor: '#184D32', backgroundColor: 'rgba(24, 77, 50, 0.1)', borderWidth: 2, tension: 0.3, fill: true }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
             const ctxLoc = document.getElementById('locationChart').getContext('2d');
             if(locationChartInstance) locationChartInstance.destroy();
-            
             locationChartInstance = new Chart(ctxLoc, {
                 type: 'bar',
                 data: {
                     labels: locLabels,
-                    datasets: [{
-                        label: 'Total Count',
-                        data: locCounts,
-                        backgroundColor: '#87CEA2',
-                        borderRadius: 5
-                    }]
+                    datasets: [{ label: 'Total Count', data: locCounts, backgroundColor: '#87CEA2', borderRadius: 5 }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
@@ -741,10 +721,7 @@
             modal.classList.add('active');
         }
 
-        function closeAnalytics() {
-            document.getElementById('analyticsModal').classList.remove('active');
-        }
-
+        function closeAnalytics() { document.getElementById('analyticsModal').classList.remove('active'); }
         document.getElementById('analyticsModal').addEventListener('click', (e) => {
             if(e.target === document.getElementById('analyticsModal')) closeAnalytics();
         });
