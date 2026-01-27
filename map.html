@@ -19,6 +19,7 @@
         
         body, html { width: 100%; overflow-x: hidden; font-family: 'SF Pro Text', sans-serif; background: var(--bg-body); color: var(--primary-green); scroll-behavior: smooth; }
         
+        /* NAVIGATION */
         nav { position: fixed; top: 0; left: 0; right: 0; height: 50px; display: flex; justify-content: center; align-items: center; background: #87CEA2; z-index: 2200; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .nav-links { display: flex; gap: 40px; align-items: center; }
         .nav-links a { color: #184D32; text-decoration: none; font-family: 'SF Pro Text', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s; }
@@ -26,6 +27,7 @@
         .back-circle-btn { position: fixed; top: 10px; left: 20px; z-index: 2300; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.6); color: #184D32; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; transition: all 0.2s; }
         .back-circle-btn:hover { background: #fff; }
 
+        /* LOADING STATUS */
         #loading-badge { position: fixed; top: 60px; right: 20px; z-index: 4000; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 10px; transition: opacity 0.5s; }
         .spinner-mini { width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid var(--primary-green); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -47,6 +49,7 @@
         .map-section { position: relative; width: 100%; height: calc(100vh - 150px); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         #map { width: 100%; height: 100%; z-index: 1; }
 
+        /* UI CONTROLS */
         .map-ui-overlay { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; gap: 15px; pointer-events: none; }
         .filter-item { pointer-events: auto; height: 40px; background: #E8F5E9; border: none; border-radius: 8px; display: flex; align-items: center; padding: 0 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .search-wrapper { flex: 1; gap: 10px; position: relative; }
@@ -129,9 +132,18 @@
     <div id="dashboard-content">
         <div class="stats-bar">
             <div class="stats-group">
-                <div class="stat-item"><div class="icon-box"><img src="assets/icon_mammals.png" alt="M" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Mammals</h4><span id="stat-mammal">0</span></div></div>
-                <div class="stat-item"><div class="icon-box"><img src="assets/icon_birds.png" alt="B" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Birds</h4><span id="stat-bird">0</span></div></div>
-                <div class="stat-item"><div class="icon-box"><img src="assets/icon_herp.png" alt="H" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Herpetofauna</h4><span id="stat-herp">0</span></div></div>
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_mammals.png" alt="M" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Mammals</h4><span id="stat-mammal">0</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_birds.png" alt="B" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Birds</h4><span id="stat-bird">0</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_herp.png" alt="H" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Herpetofauna</h4><span id="stat-herp">0</span></div>
+                </div>
             </div>
             <div class="last-monitoring"><h4>Last Monitoring Date</h4><span id="last-monitoring-date">Loading...</span></div>
         </div>
@@ -236,7 +248,7 @@
             }).subscribe();
         });
 
-        // 1. LOAD MAIN DATA (OBSERVATIONS)
+        // 1. LOAD MAIN DATA
         async function loadFullData() {
             try {
                 const statusBadge = document.getElementById('loading-status-text');
@@ -260,7 +272,7 @@
                 updateHeaderStats();
                 populateDropdowns();
                 
-                // Refresh Layers if they depend on this data
+                // FORCE REPAINT LAYERS WHEN DATA IS READY
                 updateLayerColors();
 
                 if(statusBadge) statusBadge.innerText = "Data Ready";
@@ -278,34 +290,32 @@
                 const { data, error } = await dbClient.from('view_shannon_index').select('*');
                 if (error) throw error;
                 indexData = data;
-                // Once data arrives, FORCE REPAINT layers
+                console.log("Index Data Loaded:", indexData.length); // DEBUG
+                // FORCE REPAINT LAYERS
                 updateLayerColors();
             } catch (err) { console.error("INDEX ERROR:", err); }
         }
 
-        // --- NEW FUNCTION: FORCE RE-COLOR LAYERS ---
+        // --- CORE COLORING LOGIC (SMART MATCHING) ---
         function updateLayerColors() {
             // Repaint Index Layer
             if(indexLayer) {
                 indexLayer.eachLayer(layer => {
-                    if (layer.feature) { // Ensure it's a feature layer
+                    if (layer.feature) { 
                         const id = layer.feature.properties.Name || layer.feature.properties.Sungai;
-                        // Determine if it is a grid or river style
+                        const color = getIndexColor(id);
                         const isGrid = layer.feature.geometry.type !== 'LineString';
                         
                         layer.setStyle({
-                            fillColor: getIndexColor(id),
-                            color: getIndexColor(id),
-                            weight: isGrid ? 2 : 5,
-                            fillOpacity: isGrid ? 0.6 : 0.8,
-                            opacity: isGrid ? 1 : 0.8
+                            fillColor: color, color: color,
+                            weight: isGrid ? 2 : 5, fillOpacity: isGrid ? 0.6 : 0.8, opacity: isGrid ? 1 : 0.8
                         });
                         
-                        // Update Tooltip
+                        // Update Tooltip Logic
+                        const cleanId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
                         const rec = indexData.find(d => {
                             const dbId = String(d.Plot).toLowerCase().replace(/[^a-z0-9]/g, '');
-                            const mapId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
-                            return dbId === mapId;
+                            return dbId.includes(cleanId) || cleanId.includes(dbId);
                         });
                         const val = rec ? rec.shannon_index : 'N/A';
                         layer.unbindTooltip();
@@ -321,24 +331,24 @@
                         const id = layer.feature.properties.Name || layer.feature.properties.Sungai;
                         const isGrid = layer.feature.geometry.type !== 'LineString';
                         const color = getIUCNColor(id);
-                        
                         layer.setStyle({
-                            fillColor: color,
-                            color: color,
-                            weight: isGrid ? 2 : 5,
-                            fillOpacity: isGrid ? 0.6 : 0.8
+                            fillColor: color, color: color,
+                            weight: isGrid ? 2 : 5, fillOpacity: isGrid ? 0.6 : 0.8, opacity: 0.8
                         });
                     }
                 });
             }
         }
 
-        // --- COLOR HELPERS (RED GRADIENT) ---
         function getIndexColor(id) {
             const cleanId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
-            // Robust check
-            const record = indexData.find(d => String(d.Plot).toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId);
-            if (!record) return '#cccccc'; // Default Gray if no data
+            // SMART MATCHING (Includes)
+            const record = indexData.find(d => {
+                const dbId = String(d.Plot).toLowerCase().replace(/[^a-z0-9]/g, '');
+                return dbId.includes(cleanId) || cleanId.includes(dbId);
+            });
+            
+            if (!record) return '#cccccc'; // Gray if no data
             const h = record.shannon_index;
             // 1 Tone Red Gradient
             if (h > 2.5) return '#67000d'; // Dark Red (High)
@@ -350,12 +360,15 @@
 
         function getIUCNColor(id) {
             const cleanId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
-            // Find data for this grid
+            // SMART MATCHING (Includes)
             const speciesInGrid = biodiversityData.filter(d => {
                 const p = getVal(d, 'clean_plot') || getVal(d, 'Plot') || "";
-                return String(p).toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId;
+                const dbPlot = String(p).toLowerCase().replace(/[^a-z0-9]/g, '');
+                return dbPlot.includes(cleanId) || cleanId.includes(dbPlot);
             });
             
+            if(speciesInGrid.length === 0) return 'transparent'; // No data = transparent
+
             let maxScore = 0;
             speciesInGrid.forEach(s => {
                 const status = getVal(s, 'Status IUCN') || '';
@@ -392,7 +405,6 @@
             animateValue(document.getElementById('stat-herp'), 0, countUnique('Herpetofauna'), 1500);
         }
 
-        // --- MAP INIT ---
         function initializeMap() {
             const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
             const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' });
@@ -487,6 +499,9 @@
                         }
                     }
                 });
+                
+                // Initial repaint attempt
+                updateLayerColors();
             });
         }
 
