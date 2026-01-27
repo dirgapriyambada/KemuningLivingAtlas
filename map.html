@@ -75,13 +75,32 @@
         .filter-dropdown { min-width: 120px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2387CEA2'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 30px; color: var(--secondary-text); font-family: 'SF Pro Text', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; outline: none; }
         .filter-dropdown:focus { border: 1px solid var(--secondary-text); }
 
-        /* LEAFLET CUSTOM CONTROLS */
-        .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important; margin-bottom: 10px !important; }
-        .leaflet-control-zoom a { background: #fff !important; color: var(--primary-green) !important; border-radius: 8px !important; width: 34px !important; height: 34px !important; line-height: 34px !important; font-size: 16px !important; margin-bottom: 5px; }
+        /* --- CUSTOM & LEAFLET CONTROLS STYLE --- */
         
-        .leaflet-control-layers { border: none !important; border-radius: 8px !important; box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important; font-family: 'SF Pro Text', sans-serif !important; font-size: 12px !important; padding: 10px !important; }
-        .leaflet-control-layers-toggle { width: 36px !important; height: 36px !important; }
-        
+        /* 1. LAYER CONTROL (Disamakan dengan tombol custom) */
+        .leaflet-control-layers { 
+            border: none !important; 
+            border-radius: 8px !important; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15) !important; 
+            margin-right: 10px !important; 
+            margin-bottom: 5px !important; /* Jarak ke tombol bawahnya */
+            padding: 0 !important;
+        }
+        .leaflet-control-layers-toggle { 
+            width: 34px !important; 
+            height: 34px !important; 
+            background-size: 20px !important;
+            border-radius: 8px !important;
+        }
+        /* Saat expanded/dibuka */
+        .leaflet-control-layers-expanded {
+            padding: 10px !important;
+            font-family: 'SF Pro Text', sans-serif !important;
+            font-size: 12px !important;
+            min-width: 120px !important;
+        }
+
+        /* 2. CUSTOM BUTTONS (Recenter & Reset) */
         .custom-map-controls { display: flex; flex-direction: column; gap: 5px; margin-right: 10px; margin-bottom: 10px; }
         .custom-control-btn { 
             width: 34px; height: 34px; background: #fff; border-radius: 8px; 
@@ -90,6 +109,11 @@
             transition: all 0.2s; font-size: 18px; color: var(--primary-green); 
         }
         .custom-control-btn:hover { background: #f0f0f0; transform: scale(1.05); }
+
+        /* 3. ZOOM CONTROL (Pindah ke Kiri Bawah agar Kanan tidak penuh) */
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important; margin-left: 10px !important; margin-bottom: 20px !important; }
+        .leaflet-control-zoom a { background: #fff !important; color: var(--primary-green) !important; border-radius: 4px !important; margin-bottom: 5px; }
+
 
         .detail-section { min-height: 80vh; background: #fff; margin-top: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; position: relative; border-top: 4px solid #C8E6C9; }
         .detail-header { padding: 25px 40px 15px 40px; border-bottom: 1px solid #f0f0f0; }
@@ -356,18 +380,17 @@
             const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
             const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' });
 
-            // 2. Init Map
+            // 2. Init Map (Zoom pindah ke Bottom Left)
             map = L.map('map', { center: INITIAL_CENTER, zoom: INITIAL_ZOOM, layers: [esriSat], zoomControl: false });
+            L.control.zoom({ position: 'bottomleft' }).addTo(map); // Pindah Kiri Bawah
 
-            // 3. Add Controls
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-            // 4. Layer Control (Top Right)
+            // 3. LAYER CONTROL (Bottom Right - Paling Atas)
             const baseMaps = { "Satellite": esriSat, "Street Map": osm, "Dark Mode": cartoDark };
-            const overlayMaps = {}; // Akan diisi saat GeoJSON loaded
-            layerControl = L.control.layers(baseMaps, overlayMaps, { position: 'topright' }).addTo(map);
+            const overlayMaps = {}; 
+            // Posisi di 'bottomright', ditambahkan pertama agar di tumpukan paling atas
+            layerControl = L.control.layers(baseMaps, overlayMaps, { position: 'bottomright' }).addTo(map);
 
-            // 5. Custom Reset & Recenter Buttons (Bottom Right)
+            // 4. CUSTOM CONTROLS (Bottom Right - Di bawah Layer)
             const CustomControls = L.Control.extend({
                 options: { position: 'bottomright' },
                 onAdd: function (map) {
@@ -375,13 +398,13 @@
                     
                     // Recenter Button
                     const recenterBtn = L.DomUtil.create('div', 'custom-control-btn', container);
-                    recenterBtn.innerHTML = '⌖'; // Icon Target
+                    recenterBtn.innerHTML = '⌖'; 
                     recenterBtn.title = "Recenter Map";
                     recenterBtn.onclick = function() { map.setView(INITIAL_CENTER, INITIAL_ZOOM); };
 
                     // Reset Button
                     const resetBtn = L.DomUtil.create('div', 'custom-control-btn', container);
-                    resetBtn.innerHTML = '↺'; // Icon Reset
+                    resetBtn.innerHTML = '↺'; 
                     resetBtn.title = "Reset Selection";
                     resetBtn.onclick = function() { resetSelection(); };
 
@@ -390,7 +413,7 @@
             });
             map.addControl(new CustomControls());
 
-            // 6. Fetch Layers
+            // 5. Fetch Layers
             fetch('assets/rivers.geojson').then(r => r.json()).then(data => {
                 riverLayer = L.geoJSON(data, { style: { color: '#3498db', weight: 3 }, onEachFeature: (f, l) => setupFeature(f, l, 'river') }).addTo(map);
                 layerControl.addOverlay(riverLayer, "Rivers");
