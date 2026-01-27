@@ -164,45 +164,31 @@
         }
 
         async function loadMamalia() {
-            const { data, error } = await supabaseClient
-                .from('view_species_mamalia') 
-                .select('*');
-
-            if (error) {
-                console.error("Error Mamalia (SQL Permission mungkin belum dibuka):", error);
-            } else {
-                dataMamalia = data;
-            }
+            const { data, error } = await supabaseClient.from('view_species_mamalia').select('*');
+            if (error) { console.error("Error Mamalia:", error); } else { dataMamalia = data; }
         }
 
         async function loadBurung() {
-            const { data, error } = await supabaseClient
-                .from('view_species_burung')
-                .select('*');
-
-            if (error) {
-                console.error("Error Burung:", error);
-            } else {
-                dataBurung = data;
-            }
+            const { data, error } = await supabaseClient.from('view_species_burung').select('*');
+            if (error) { console.error("Error Burung:", error); } else { dataBurung = data; }
         }
 
         async function loadHerpet() {
-            const { data, error } = await supabaseClient
-                .from('view_species_herpetofauna')
-                .select('*');
+            const { data, error } = await supabaseClient.from('view_species_herpetofauna').select('*');
+            if (error) { console.error("Error Herpet:", error); } else { dataHerpet = data; }
+        }
 
-            if (error) {
-                console.error("Error Herpet:", error);
-            } else {
-                dataHerpet = data;
-            }
+        // Hitung total unik, bukan total perjumpaan
+        function getUniqueCount(dataArray) {
+            const unique = new Set(dataArray.map(d => (d['Nama Ilmiah'] || '').toLowerCase().trim()));
+            return unique.size;
         }
 
         function updateCounts() {
-            const countM = dataMamalia.length;
-            const countB = dataBurung.length;
-            const countH = dataHerpet.length;
+            // Hitung berdasarkan spesies unik
+            const countM = getUniqueCount(dataMamalia);
+            const countB = getUniqueCount(dataBurung);
+            const countH = getUniqueCount(dataHerpet);
 
             animateValue(document.getElementById('count-mamalia'), 0, countM, 1500);
             animateValue(document.getElementById('count-burung'), 0, countB, 1500);
@@ -239,45 +225,73 @@
             setTimeout(() => { viewSelection.classList.remove('hidden'); }, 300);
         };
 
-        // FUNGSI HELPER AMAN (Handle huruf Besar/Kecil)
         function safeGet(item, key1, key2) {
             return item[key1] || item[key2] || '-';
         }
 
+        // --- INI FUNGSI KUNCI PERBAIKANNYA ---
         function populateTable(dataArray) {
             tableContent.innerHTML = '';
             
-            // Sort dengan aman
-            dataArray.sort((a, b) => {
-                const nameA = a.Jenis || a.jenis || '';
-                const nameB = b.Jenis || b.jenis || '';
-                return nameA.localeCompare(nameB);
+            // 1. DEDUPLIKASI & NORMALISASI
+            const uniqueItems = new Map();
+
+            dataArray.forEach(item => {
+                const scientific = safeGet(item, 'Nama Ilmiah', 'nama ilmiah');
+                let common = safeGet(item, 'Jenis', 'jenis');
+
+                // PERBAIKAN: Ubah ke Sentence Case (Huruf depan Besar, sisanya kecil)
+                // Contoh: "ular hijau" -> "Ular hijau"
+                if (common && common !== '-') {
+                    common = common.trim();
+                    common = common.charAt(0).toUpperCase() + common.slice(1).toLowerCase();
+                } else {
+                    common = '-';
+                }
+
+                // KUNCI UNIK: Gunakan Nama Ilmiah (lowercase) biar akurat
+                // Jika Nama Ilmiah kosong, baru pakai Common Name
+                const key = (scientific && scientific !== '-') ? scientific.toLowerCase().trim() : common.toLowerCase().trim();
+
+                if (!uniqueItems.has(key)) {
+                    // Simpan data yang sudah dirapikan ke objek baru
+                    const cleanItem = {
+                        displayJenis: common,
+                        displayIlmiah: scientific,
+                        displayInggris: safeGet(item, 'Nama Inggris', 'nama inggris') || safeGet(item, 'English Name', 'english name'),
+                        displayFamili: safeGet(item, 'Famili', 'famili'),
+                        displayIUCN: safeGet(item, 'Status IUCN', 'status iucn'),
+                        displayProtect: safeGet(item, 'Dilindungi', 'dilindungi')
+                    };
+                    uniqueItems.set(key, cleanItem);
+                }
             });
 
-            if (dataArray.length === 0) {
+            // Ubah Map jadi Array
+            const sortedList = Array.from(uniqueItems.values());
+
+            // 2. SORTING (Abjad berdasarkan Nama Lokal)
+            sortedList.sort((a, b) => {
+                return a.displayJenis.localeCompare(b.displayJenis);
+            });
+
+            if (sortedList.length === 0) {
                 tableContent.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">No data found. (Check SQL Permissions)</div>';
                 return;
             }
 
-            dataArray.forEach(item => {
+            // 3. RENDER TABEL
+            sortedList.forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'table-row';
 
-                // Coba ambil "Jenis" (besar), kalau ga ada ambil "jenis" (kecil)
-                const commonName = safeGet(item, 'Jenis', 'jenis');
-                const englishName = safeGet(item, 'Nama Inggris', 'nama inggris');
-                const sciName = safeGet(item, 'Nama Ilmiah', 'nama ilmiah');
-                const family = safeGet(item, 'Famili', 'famili');
-                const iucn = safeGet(item, 'Status IUCN', 'status iucn');
-                const protection = safeGet(item, 'Dilindungi', 'dilindungi');
-
                 row.innerHTML = `
-                    <div><strong>${commonName}</strong></div>
-                    <div>${englishName}</div>
-                    <div><em>${sciName}</em></div>
-                    <div>${family}</div>
-                    <div>${iucn}</div>
-                    <div>${protection}</div>
+                    <div><strong>${item.displayJenis}</strong></div>
+                    <div>${item.displayInggris || '-'}</div>
+                    <div><em>${item.displayIlmiah || '-'}</em></div>
+                    <div>${item.displayFamili || '-'}</div>
+                    <div>${item.displayIUCN || '-'}</div>
+                    <div>${item.displayProtect || '-'}</div>
                 `;
                 tableContent.appendChild(row);
             });
