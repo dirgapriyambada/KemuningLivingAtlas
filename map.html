@@ -60,6 +60,7 @@
         .map-section { position: relative; width: 100%; height: calc(100vh - 150px); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         #map { width: 100%; height: 100%; z-index: 1; }
 
+        /* UI CONTROLS */
         .map-ui-overlay { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; gap: 15px; pointer-events: none; }
         .filter-item { pointer-events: auto; height: 40px; background: #E8F5E9; border: none; border-radius: 8px; display: flex; align-items: center; padding: 0 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .search-wrapper { flex: 1; gap: 10px; position: relative; }
@@ -73,6 +74,22 @@
         .autocomplete-item:hover { background-color: var(--dropdown-hover); }
         .filter-dropdown { min-width: 120px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2387CEA2'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 30px; color: var(--secondary-text); font-family: 'SF Pro Text', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; outline: none; }
         .filter-dropdown:focus { border: 1px solid var(--secondary-text); }
+
+        /* LEAFLET CUSTOM CONTROLS */
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important; margin-bottom: 10px !important; }
+        .leaflet-control-zoom a { background: #fff !important; color: var(--primary-green) !important; border-radius: 8px !important; width: 34px !important; height: 34px !important; line-height: 34px !important; font-size: 16px !important; margin-bottom: 5px; }
+        
+        .leaflet-control-layers { border: none !important; border-radius: 8px !important; box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important; font-family: 'SF Pro Text', sans-serif !important; font-size: 12px !important; padding: 10px !important; }
+        .leaflet-control-layers-toggle { width: 36px !important; height: 36px !important; }
+        
+        .custom-map-controls { display: flex; flex-direction: column; gap: 5px; margin-right: 10px; margin-bottom: 10px; }
+        .custom-control-btn { 
+            width: 34px; height: 34px; background: #fff; border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15); 
+            transition: all 0.2s; font-size: 18px; color: var(--primary-green); 
+        }
+        .custom-control-btn:hover { background: #f0f0f0; transform: scale(1.05); }
 
         .detail-section { min-height: 80vh; background: #fff; margin-top: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; position: relative; border-top: 4px solid #C8E6C9; }
         .detail-header { padding: 25px 40px 15px 40px; border-bottom: 1px solid #f0f0f0; }
@@ -94,9 +111,6 @@
         .empty-state { display: flex; justify-content: center; align-items: center; height: 50vh; width: 100%; }
         .empty-text { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 24px; color: var(--primary-green); letter-spacing: 1px; opacity: 0.6; }
 
-        .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important; }
-        .leaflet-control-zoom a { background: #fff !important; color: var(--primary-green) !important; border-radius: 4px !important; margin-bottom: 5px; }
-        .leaflet-control-layers { border: none !important; border-radius: 8px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important; font-family: 'SF Pro Text', sans-serif !important; font-size: 11px !important; }
         .grid-label { background: transparent; border: none; box-shadow: none; color: #fff; font-weight: 700; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 
         /* ANALYTICS MODAL */
@@ -235,7 +249,7 @@
         const dbClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let biodiversityData = [];
-        let gridLayer, riverLayer, map;
+        let gridLayer, riverLayer, map, layerControl;
         let selectedLayer = null;
         let selectedLayerType = null;
         let currentGridRawData = [];
@@ -244,13 +258,16 @@
         let locationChartInstance = null;
         let isDataReady = false;
         
+        // Initial Map Settings for Recenter Button
+        const INITIAL_CENTER = [-7.135, 110.105];
+        const INITIAL_ZOOM = 15;
+        
         const accentColor = '#c4ff9d';
         const iucnColors = { 'CR': '#d9534f', 'EN': '#f0ad4e', 'VU': '#f0ad4e', 'NT': '#5bc0de', 'LC': '#5cb85c', 'DD': '#777' };
 
         document.addEventListener('DOMContentLoaded', () => {
             initializeMap();
             loadFullData(); 
-            // Fetch Stats TIDAK DIPANGGIL DISINI LAGI (Dipindah ke dalam loadFullData agar akurat)
             fetchLastMonitoring(); 
 
             // REALTIME LISTENER
@@ -262,7 +279,7 @@
             }).subscribe();
         });
 
-        // --- LOAD DATA & UPDATE STATS (REVISI: HITUNG SPESIES UNIK) ---
+        // --- LOAD DATA ---
         async function loadFullData() {
             try {
                 const statusBadge = document.getElementById('loading-status-text');
@@ -282,29 +299,24 @@
                         .range(from, from + step - 1);
 
                     if (error) throw error;
-
                     if (data.length > 0) {
                         allRows = allRows.concat(data);
                         from += step;
                         if(statusBadge) statusBadge.innerText = `Loaded ${allRows.length} rows...`;
                     }
-
                     if (data.length < step) more = false; 
                 }
 
                 biodiversityData = allRows;
                 console.log(`✅ TOTAL DATA: ${biodiversityData.length}`);
 
-                // --- UPDATE STATISTIK (SPESIES UNIK) ---
                 updateHeaderStats();
-
                 populateDropdowns();
                 
                 if(statusBadge) statusBadge.innerText = "Data Ready";
                 setTimeout(() => { if(badge) badge.style.opacity = '0'; }, 2000);
                 
                 isDataReady = true;
-                
                 if(selectedLayer) { 
                     const id = selectedLayer.feature.properties.Name || selectedLayer.feature.properties.Sungai;
                     selectLocation(selectedLayer, id, selectedLayerType);
@@ -313,45 +325,107 @@
             } catch (err) {
                 console.error("LOAD ERROR:", err);
                 const statusBadge = document.getElementById('loading-status-text');
-                if(statusBadge) {
-                    statusBadge.innerText = "Error loading data!";
-                    statusBadge.style.color = "red";
-                }
+                if(statusBadge) { statusBadge.innerText = "Error loading data!"; statusBadge.style.color = "red"; }
             }
         }
 
-        // --- FUNGSI BARU: HITUNG SPESIES UNIK ---
         function updateHeaderStats() {
             const countUnique = (taxaName) => {
                 const subset = biodiversityData.filter(d => getVal(d, 'Taxa') === taxaName);
-                
-                // Gunakan Set untuk menghitung nama unik
                 const uniqueNames = new Set();
-                
                 subset.forEach(d => {
-                    const s = getVal(d, 'Nama Ilmiah'); // Prioritas 1
-                    const c = getVal(d, 'Jenis');       // Prioritas 2
-                    
+                    const s = getVal(d, 'Nama Ilmiah'); 
+                    const c = getVal(d, 'Jenis');       
                     let key = null;
                     if (s && s !== '-') key = s.toLowerCase().trim();
                     else if (c && c !== '-') key = c.toLowerCase().trim();
-                    
                     if(key) uniqueNames.add(key);
                 });
-                
                 return uniqueNames.size;
             };
 
-            const countM = countUnique('Mamalia');
-            const countB = countUnique('Burung');
-            const countH = countUnique('Herpetofauna');
-
-            animateValue(document.getElementById('stat-mammal'), 0, countM, 1500);
-            animateValue(document.getElementById('stat-bird'), 0, countB, 1500);
-            animateValue(document.getElementById('stat-herp'), 0, countH, 1500);
+            animateValue(document.getElementById('stat-mammal'), 0, countUnique('Mamalia'), 1500);
+            animateValue(document.getElementById('stat-bird'), 0, countUnique('Burung'), 1500);
+            animateValue(document.getElementById('stat-herp'), 0, countUnique('Herpetofauna'), 1500);
         }
 
-        // --- FILTER LOKASI (TAHAN BANTING) ---
+        // --- MAP INITIALIZATION & CONTROLS ---
+        function initializeMap() {
+            // 1. Define Base Maps
+            const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+            const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' });
+
+            // 2. Init Map
+            map = L.map('map', { center: INITIAL_CENTER, zoom: INITIAL_ZOOM, layers: [esriSat], zoomControl: false });
+
+            // 3. Add Controls
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // 4. Layer Control (Top Right)
+            const baseMaps = { "Satellite": esriSat, "Street Map": osm, "Dark Mode": cartoDark };
+            const overlayMaps = {}; // Akan diisi saat GeoJSON loaded
+            layerControl = L.control.layers(baseMaps, overlayMaps, { position: 'topright' }).addTo(map);
+
+            // 5. Custom Reset & Recenter Buttons (Bottom Right)
+            const CustomControls = L.Control.extend({
+                options: { position: 'bottomright' },
+                onAdd: function (map) {
+                    const container = L.DomUtil.create('div', 'custom-map-controls');
+                    
+                    // Recenter Button
+                    const recenterBtn = L.DomUtil.create('div', 'custom-control-btn', container);
+                    recenterBtn.innerHTML = '⌖'; // Icon Target
+                    recenterBtn.title = "Recenter Map";
+                    recenterBtn.onclick = function() { map.setView(INITIAL_CENTER, INITIAL_ZOOM); };
+
+                    // Reset Button
+                    const resetBtn = L.DomUtil.create('div', 'custom-control-btn', container);
+                    resetBtn.innerHTML = '↺'; // Icon Reset
+                    resetBtn.title = "Reset Selection";
+                    resetBtn.onclick = function() { resetSelection(); };
+
+                    return container;
+                }
+            });
+            map.addControl(new CustomControls());
+
+            // 6. Fetch Layers
+            fetch('assets/rivers.geojson').then(r => r.json()).then(data => {
+                riverLayer = L.geoJSON(data, { style: { color: '#3498db', weight: 3 }, onEachFeature: (f, l) => setupFeature(f, l, 'river') }).addTo(map);
+                layerControl.addOverlay(riverLayer, "Rivers");
+            });
+            fetch('assets/grids.geojson').then(r => r.json()).then(data => {
+                gridLayer = L.geoJSON(data, { style: { color: accentColor, weight: 1, fillOpacity: 0.15 }, onEachFeature: (f, l) => setupFeature(f, l, 'grid') }).addTo(map);
+                map.fitBounds(gridLayer.getBounds());
+                layerControl.addOverlay(gridLayer, "Survey Grids");
+            });
+            
+            map.on('click', () => { if(isDataReady) resetSelection(); });
+        }
+
+        function setupFeature(feature, layer, type) {
+            const id = feature.properties.Name || feature.properties.Sungai;
+            layer.bindTooltip(id, { permanent: type==='grid', direction: 'center', className: 'grid-label' });
+            layer.on({
+                mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle({ weight: 3, color: '#fff', fillOpacity: 0.4 }); },
+                mouseout: (e) => { if(layer !== selectedLayer) resetLayerStyle(layer, type); },
+                click: (e) => { L.DomEvent.stopPropagation(e); selectLocation(layer, id, type); }
+            });
+        }
+
+        function resetLayerStyle(layer, type) {
+            if(type === 'grid') gridLayer.resetStyle(layer);
+            else riverLayer.resetStyle(layer);
+        }
+
+        function resetSelection() {
+            if (selectedLayer) resetLayerStyle(selectedLayer, selectedLayerType);
+            selectedLayer = null; selectedLayerType = null;
+            document.getElementById('empty-state').style.display = 'flex';
+            document.getElementById('detail-content').style.display = 'none';
+        }
+
         function selectLocation(layer, id, type) {
             if (selectedLayer && selectedLayer !== layer) resetLayerStyle(selectedLayer, selectedLayerType);
             selectedLayer = layer; selectedLayerType = type;
@@ -374,13 +448,11 @@
             currentGridRawData = biodiversityData.filter(d => {
                 const rawDbPlot = getVal(d, 'clean_plot') || getVal(d, 'Plot') || getVal(d, 'plot_id');
                 if (!rawDbPlot) return false;
-
                 const dbPlotClean = String(rawDbPlot).toLowerCase().replace(/[^a-z0-9]/g, '');
                 return dbPlotClean.includes(targetClean) || targetClean.includes(dbPlotClean);
             });
 
             console.log(`✅ HASIL FILTER: ${currentGridRawData.length} data ditemukan.`);
-
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
@@ -421,53 +493,14 @@
             } catch(e){}
         }
 
-        function initializeMap() {
-            const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
-            map = L.map('map', { center: [-7.135, 110.105], zoom: 15, layers: [esriSat], zoomControl: false });
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-            fetch('assets/rivers.geojson').then(r => r.json()).then(data => {
-                riverLayer = L.geoJSON(data, { style: { color: '#3498db', weight: 3 }, onEachFeature: (f, l) => setupFeature(f, l, 'river') }).addTo(map);
-            });
-            fetch('assets/grids.geojson').then(r => r.json()).then(data => {
-                gridLayer = L.geoJSON(data, { style: { color: accentColor, weight: 1, fillOpacity: 0.15 }, onEachFeature: (f, l) => setupFeature(f, l, 'grid') }).addTo(map);
-                map.fitBounds(gridLayer.getBounds());
-            });
-            map.on('click', () => { if(isDataReady) resetSelection(); });
-        }
-
-        function setupFeature(feature, layer, type) {
-            const id = feature.properties.Name || feature.properties.Sungai;
-            layer.bindTooltip(id, { permanent: type==='grid', direction: 'center', className: 'grid-label' });
-            layer.on({
-                mouseover: (e) => { if(layer !== selectedLayer) e.target.setStyle({ weight: 3, color: '#fff', fillOpacity: 0.4 }); },
-                mouseout: (e) => { if(layer !== selectedLayer) resetLayerStyle(layer, type); },
-                click: (e) => { L.DomEvent.stopPropagation(e); selectLocation(layer, id, type); }
-            });
-        }
-
-        function resetLayerStyle(layer, type) {
-            if(type === 'grid') gridLayer.resetStyle(layer);
-            else riverLayer.resetStyle(layer);
-        }
-
-        function resetSelection() {
-            if (selectedLayer) resetLayerStyle(selectedLayer, selectedLayerType);
-            selectedLayer = null; selectedLayerType = null;
-            document.getElementById('empty-state').style.display = 'flex';
-            document.getElementById('detail-content').style.display = 'none';
-        }
-
         function populateDropdowns() {
             const mSelect = document.getElementById('filterMonth');
             const ySelect = document.getElementById('filterYear');
-            
             const months = [...new Set(biodiversityData.map(d => getVal(d, 'Bulan')))].filter(x=>x).sort();
             const years = [...new Set(biodiversityData.map(d => getVal(d, 'Tahun')))].filter(x=>x).sort();
 
             mSelect.innerHTML = '<option value="All">Survey Month</option>';
             ySelect.innerHTML = '<option value="All">Survey Year</option>';
-            
             months.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
             years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
             
