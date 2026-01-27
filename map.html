@@ -27,7 +27,7 @@
         .back-circle-btn { position: fixed; top: 10px; left: 20px; z-index: 2300; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.6); color: #184D32; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; transition: all 0.2s; }
         .back-circle-btn:hover { background: #fff; }
 
-        /* LOADING STATUS (Kecil di pojok, bukan fullscreen biar tidak blank) */
+        /* LOADING STATUS */
         #loading-badge {
             position: fixed; top: 60px; right: 20px; z-index: 4000;
             background: #fff; padding: 10px 20px; border-radius: 8px;
@@ -42,8 +42,8 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* DASHBOARD CONTENT (Langsung Visible) */
-        #dashboard-content { opacity: 1; } /* FIX: Jangan 0 agar tidak blank */
+        /* DASHBOARD CONTENT */
+        #dashboard-content { opacity: 1; }
 
         .stats-bar { position: fixed; top: 50px; left: 0; right: 0; height: 70px; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 2100; }
         .stats-group { display: flex; gap: 40px; align-items: center; }
@@ -150,9 +150,18 @@
     <div id="dashboard-content">
         <div class="stats-bar">
             <div class="stats-group">
-                <div class="stat-item"><div class="icon-box"><img src="assets/icon_mammals.png" alt="M" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Mammals</h4><span id="stat-mammal">0</span></div></div>
-                <div class="stat-item"><div class="icon-box"><img src="assets/icon_birds.png" alt="B" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Birds</h4><span id="stat-bird">0</span></div></div>
-                <div class="stat-item"><div class="icon-box"><img src="assets/icon_herp.png" alt="H" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Herpetofauna</h4><span id="stat-herp">0</span></div></div>
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_mammals.png" alt="M" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Mammals</h4><span id="stat-mammal">0</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_birds.png" alt="B" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Birds</h4><span id="stat-bird">0</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="icon-box"><img src="assets/icon_herp.png" alt="H" onerror="this.style.display='none'"></div>
+                    <div class="stat-text"><h4>Herpetofauna</h4><span id="stat-herp">0</span></div>
+                </div>
             </div>
             <div class="last-monitoring"><h4>Last Monitoring Date</h4><span id="last-monitoring-date">Loading...</span></div>
         </div>
@@ -241,7 +250,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initializeMap();
             loadFullData(); 
-            fetchHeaderStats(); 
+            // Fetch Stats TIDAK DIPANGGIL DISINI LAGI (Dipindah ke dalam loadFullData agar akurat)
             fetchLastMonitoring(); 
 
             // REALTIME LISTENER
@@ -249,12 +258,11 @@
             (payload) => {
                 showRealtimeNotification("New data received! Refreshing...");
                 loadFullData(); 
-                fetchHeaderStats();
                 fetchLastMonitoring();
             }).subscribe();
         });
 
-        // --- FUNGSI DOWNLOAD DATA BERTAHAP (AGAR DATA >1000 MASUK SEMUA) ---
+        // --- LOAD DATA & UPDATE STATS (REVISI: HITUNG SPESIES UNIK) ---
         async function loadFullData() {
             try {
                 const statusBadge = document.getElementById('loading-status-text');
@@ -267,7 +275,6 @@
                 let step = 1000; 
                 let more = true;
 
-                // LOOPING DOWNLOAD
                 while(more) {
                     const { data, error } = await dbClient
                         .from('biodiversity_dashboard')
@@ -282,23 +289,22 @@
                         if(statusBadge) statusBadge.innerText = `Loaded ${allRows.length} rows...`;
                     }
 
-                    if (data.length < step) {
-                        more = false; // Stop loop jika data habis
-                    }
+                    if (data.length < step) more = false; 
                 }
 
                 biodiversityData = allRows;
                 console.log(`✅ TOTAL DATA: ${biodiversityData.length}`);
 
+                // --- UPDATE STATISTIK (SPESIES UNIK) ---
+                updateHeaderStats();
+
                 populateDropdowns();
                 
-                // Hide Badge
                 if(statusBadge) statusBadge.innerText = "Data Ready";
                 setTimeout(() => { if(badge) badge.style.opacity = '0'; }, 2000);
                 
                 isDataReady = true;
                 
-                // Refresh jika sedang buka grid
                 if(selectedLayer) { 
                     const id = selectedLayer.feature.properties.Name || selectedLayer.feature.properties.Sungai;
                     selectLocation(selectedLayer, id, selectedLayerType);
@@ -311,8 +317,38 @@
                     statusBadge.innerText = "Error loading data!";
                     statusBadge.style.color = "red";
                 }
-                alert("Gagal memuat data dari database. Cek koneksi internet atau console.");
             }
+        }
+
+        // --- FUNGSI BARU: HITUNG SPESIES UNIK ---
+        function updateHeaderStats() {
+            const countUnique = (taxaName) => {
+                const subset = biodiversityData.filter(d => getVal(d, 'Taxa') === taxaName);
+                
+                // Gunakan Set untuk menghitung nama unik
+                const uniqueNames = new Set();
+                
+                subset.forEach(d => {
+                    const s = getVal(d, 'Nama Ilmiah'); // Prioritas 1
+                    const c = getVal(d, 'Jenis');       // Prioritas 2
+                    
+                    let key = null;
+                    if (s && s !== '-') key = s.toLowerCase().trim();
+                    else if (c && c !== '-') key = c.toLowerCase().trim();
+                    
+                    if(key) uniqueNames.add(key);
+                });
+                
+                return uniqueNames.size;
+            };
+
+            const countM = countUnique('Mamalia');
+            const countB = countUnique('Burung');
+            const countH = countUnique('Herpetofauna');
+
+            animateValue(document.getElementById('stat-mammal'), 0, countM, 1500);
+            animateValue(document.getElementById('stat-bird'), 0, countB, 1500);
+            animateValue(document.getElementById('stat-herp'), 0, countH, 1500);
         }
 
         // --- FILTER LOKASI (TAHAN BANTING) ---
@@ -336,13 +372,10 @@
             console.log(`🔍 KLIK PETA: "${id}" (Target Clean: "${targetClean}")`);
 
             currentGridRawData = biodiversityData.filter(d => {
-                // Gunakan kolom 'clean_plot' jika ada, atau bersihkan manual
                 const rawDbPlot = getVal(d, 'clean_plot') || getVal(d, 'Plot') || getVal(d, 'plot_id');
                 if (!rawDbPlot) return false;
 
                 const dbPlotClean = String(rawDbPlot).toLowerCase().replace(/[^a-z0-9]/g, '');
-                
-                // Pencocokan Flexible
                 return dbPlotClean.includes(targetClean) || targetClean.includes(dbPlotClean);
             });
 
@@ -366,15 +399,16 @@
             return item[key] || item[key.toLowerCase()] || item[key.toUpperCase()] || null;
         }
 
-        async function fetchHeaderStats() {
-            try {
-                const { count: cm } = await dbClient.from('view_species_mamalia').select('*', { count: 'exact', head: true });
-                const { count: cb } = await dbClient.from('view_species_burung').select('*', { count: 'exact', head: true });
-                const { count: ch } = await dbClient.from('view_species_herpetofauna').select('*', { count: 'exact', head: true });
-                document.getElementById('stat-mammal').innerText = cm || 0;
-                document.getElementById('stat-bird').innerText = cb || 0;
-                document.getElementById('stat-herp').innerText = ch || 0;
-            } catch(e){}
+        function animateValue(obj, start, end, duration) {
+            if(!obj) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
         }
 
         async function fetchLastMonitoring() {
