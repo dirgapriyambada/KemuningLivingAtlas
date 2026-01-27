@@ -77,7 +77,7 @@
 
         /* --- CUSTOM & LEAFLET CONTROLS STYLE --- */
         
-        /* 1. LAYER CONTROL (Disamakan dengan tombol custom) */
+        /* 1. LAYER CONTROL (Bottom Right - Paling Atas) */
         .leaflet-control-layers { 
             border: none !important; 
             border-radius: 8px !important; 
@@ -92,7 +92,6 @@
             background-size: 20px !important;
             border-radius: 8px !important;
         }
-        /* Saat expanded/dibuka */
         .leaflet-control-layers-expanded {
             padding: 10px !important;
             font-family: 'SF Pro Text', sans-serif !important;
@@ -110,7 +109,7 @@
         }
         .custom-control-btn:hover { background: #f0f0f0; transform: scale(1.05); }
 
-        /* 3. ZOOM CONTROL (Pindah ke Kiri Bawah agar Kanan tidak penuh) */
+        /* 3. ZOOM CONTROL (Bottom Left) */
         .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important; margin-left: 10px !important; margin-bottom: 20px !important; }
         .leaflet-control-zoom a { background: #fff !important; color: var(--primary-green) !important; border-radius: 4px !important; margin-bottom: 5px; }
 
@@ -382,12 +381,13 @@
 
             // 2. Init Map (Zoom pindah ke Bottom Left)
             map = L.map('map', { center: INITIAL_CENTER, zoom: INITIAL_ZOOM, layers: [esriSat], zoomControl: false });
-            L.control.zoom({ position: 'bottomleft' }).addTo(map); // Pindah Kiri Bawah
+            L.control.zoom({ position: 'bottomleft' }).addTo(map); 
 
             // 3. LAYER CONTROL (Bottom Right - Paling Atas)
             const baseMaps = { "Satellite": esriSat, "Street Map": osm, "Dark Mode": cartoDark };
             const overlayMaps = {}; 
-            // Posisi di 'bottomright', ditambahkan pertama agar di tumpukan paling atas
+            
+            // Layer Control di pojok kanan bawah
             layerControl = L.control.layers(baseMaps, overlayMaps, { position: 'bottomright' }).addTo(map);
 
             // 4. CUSTOM CONTROLS (Bottom Right - Di bawah Layer)
@@ -486,6 +486,11 @@
             toast.innerText = msg;
             Object.assign(toast.style, { position: 'fixed', bottom: '20px', right: '20px', background: '#184D32', color: '#fff', padding: '15px 25px', borderRadius: '50px', zIndex: '9999', opacity: '0', transition: 'opacity 0.5s' });
             document.body.appendChild(toast);
+
+            // AUDIO CUE (Sound Effect)
+            const audio = new Audio('assets/notifications.wav'); 
+            audio.play().catch(e => console.log("Audio play failed (interaction needed):", e));
+
             setTimeout(() => toast.style.opacity = '1', 100);
             setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
         }
