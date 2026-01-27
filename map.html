@@ -35,14 +35,9 @@
             display: flex; align-items: center; gap: 10px;
             transition: opacity 0.5s;
         }
-        .spinner-mini {
-            width: 16px; height: 16px; border: 2px solid #f3f3f3; 
-            border-top: 2px solid var(--primary-green); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+        .spinner-mini { width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid var(--primary-green); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* DASHBOARD CONTENT */
         #dashboard-content { opacity: 1; }
 
         .stats-bar { position: fixed; top: 50px; left: 0; right: 0; height: 70px; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 2100; }
@@ -75,31 +70,25 @@
         .filter-dropdown { min-width: 120px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2387CEA2'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 30px; color: var(--secondary-text); font-family: 'SF Pro Text', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; outline: none; }
         .filter-dropdown:focus { border: 1px solid var(--secondary-text); }
 
-        /* --- CUSTOM & LEAFLET CONTROLS STYLE --- */
+        /* --- CONTROLS STYLE --- */
         
-        /* 1. LAYER CONTROL (Bottom Right - Paling Atas) */
+        /* 1. LAYER CONTROL (Disamakan dengan tombol custom) */
         .leaflet-control-layers { 
-            border: none !important; 
-            border-radius: 8px !important; 
+            border: none !important; border-radius: 8px !important; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.15) !important; 
-            margin-right: 10px !important; 
-            margin-bottom: 5px !important; /* Jarak ke tombol bawahnya */
-            padding: 0 !important;
+            margin-right: 10px !important; margin-bottom: 5px !important; 
+            padding: 0 !important; background: #fff;
         }
         .leaflet-control-layers-toggle { 
-            width: 34px !important; 
-            height: 34px !important; 
-            background-size: 20px !important;
-            border-radius: 8px !important;
+            width: 34px !important; height: 34px !important; 
+            background-size: 20px !important; border-radius: 8px !important;
         }
         .leaflet-control-layers-expanded {
-            padding: 10px !important;
-            font-family: 'SF Pro Text', sans-serif !important;
-            font-size: 12px !important;
-            min-width: 120px !important;
+            padding: 10px !important; font-family: 'SF Pro Text', sans-serif !important;
+            font-size: 12px !important; min-width: 140px !important;
         }
 
-        /* 2. CUSTOM BUTTONS (Recenter & Reset) */
+        /* 2. CUSTOM BUTTONS */
         .custom-map-controls { display: flex; flex-direction: column; gap: 5px; margin-right: 10px; margin-bottom: 10px; }
         .custom-control-btn { 
             width: 34px; height: 34px; background: #fff; border-radius: 8px; 
@@ -113,6 +102,10 @@
         .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important; margin-left: 10px !important; margin-bottom: 20px !important; }
         .leaflet-control-zoom a { background: #fff !important; color: var(--primary-green) !important; border-radius: 4px !important; margin-bottom: 5px; }
 
+        /* 4. LEGEND */
+        .info.legend { background: white; padding: 10px; font: 12px 'SF Pro Text', sans-serif; box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 8px; line-height: 20px; color: #333; min-width: 150px; margin-bottom: 20px; margin-left: 10px; }
+        .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.9; border-radius: 3px; }
+        .legend-title { font-weight: 800; margin-bottom: 8px; display: block; font-size: 13px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
 
         .detail-section { min-height: 80vh; background: #fff; margin-top: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; position: relative; border-top: 4px solid #C8E6C9; }
         .detail-header { padding: 25px 40px 15px 40px; border-bottom: 1px solid #f0f0f0; }
@@ -124,47 +117,25 @@
         .table-select { appearance: none; background: transparent; border: none; font-family: 'SF Pro Text', sans-serif; font-size: 13px; color: var(--secondary-text); width: 100%; cursor: pointer; outline: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2387CEA2'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0px center; background-size: 14px; }
         .data-table-container { width: 100%; padding: 0 40px 40px 40px; }
         .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .data-table th { text-align: left; padding: 15px 0; border-bottom: 2px solid #f0f0f0; font-size: 11px; color: var(--primary-green); font-weight: 700; text-transform: uppercase; cursor: pointer; user-select: none; transition: color 0.2s; }
-        .data-table th:hover { color: #2E7D32; }
+        .data-table th { text-align: left; padding: 15px 0; border-bottom: 2px solid #f0f0f0; font-size: 11px; color: var(--primary-green); font-weight: 700; text-transform: uppercase; cursor: pointer; }
         .data-table td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px; color: #333; }
         .data-table td strong { font-weight: 700; color: var(--primary-green); display: block; }
-        .data-table td strong:hover { color: #2E7D32; text-decoration: underline; }
-        .clickable-species { cursor: pointer; }
         .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; }
         .empty-state { display: flex; justify-content: center; align-items: center; height: 50vh; width: 100%; }
-        .empty-text { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 24px; color: var(--primary-green); letter-spacing: 1px; opacity: 0.6; }
-
+        .empty-text { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 24px; color: var(--primary-green); opacity: 0.6; }
         .grid-label { background: transparent; border: none; box-shadow: none; color: #fff; font-weight: 700; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 
         /* ANALYTICS MODAL */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px);
-            z-index: 3000; display: none; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s ease;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); z-index: 3000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
         .modal-overlay.active { display: flex; opacity: 1; }
-        .analytics-card {
-            background: #fff; width: 90%; max-width: 900px; max-height: 90vh;
-            border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-            display: flex; flex-direction: column; overflow: hidden;
-            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        .analytics-card { background: #fff; width: 90%; max-width: 900px; max-height: 90vh; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; transform: scale(0.9); transition: transform 0.3s ease; }
         .modal-overlay.active .analytics-card { transform: scale(1); }
         .analytics-header { padding: 20px 30px; background: #E8F5E9; border-bottom: 1px solid #C8E6C9; display: flex; justify-content: space-between; align-items: center; }
         .analytics-body { padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; }
         .chart-row { display: flex; gap: 30px; min-height: 300px; }
         .chart-container { flex: 1; background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
         
-        @media(max-width: 1000px) {
-            .main-container { margin-top: 150px; width: 100%; border-radius: 0; }
-            .map-section { border-radius: 0; }
-            .map-ui-overlay { flex-direction: column; align-items: stretch; gap: 10px; }
-            .stats-bar { height: auto; padding: 15px 20px; flex-direction: column; align-items: flex-start; gap: 10px; }
-            .table-filters { flex-direction: column; gap: 10px; }
-            .filter-chip-wrapper { width: 100%; }
-            .chart-row { flex-direction: column; }
-        }
+        @media(max-width: 1000px) { .main-container { margin-top: 150px; } .stats-bar { height: auto; padding: 15px 20px; flex-direction: column; align-items: flex-start; gap: 10px; } .map-ui-overlay { flex-direction: column; gap: 10px; } .chart-row { flex-direction: column; } }
     </style>
 </head>
 
@@ -272,7 +243,8 @@
         const dbClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let biodiversityData = [];
-        let gridLayer, riverLayer, map, layerControl;
+        let indexData = []; // Store H' values
+        let gridLayer, riverLayer, indexLayer, iucnLayer, map, layerControl;
         let selectedLayer = null;
         let selectedLayerType = null;
         let currentGridRawData = [];
@@ -281,16 +253,15 @@
         let locationChartInstance = null;
         let isDataReady = false;
         
-        // Initial Map Settings for Recenter Button
         const INITIAL_CENTER = [-7.135, 110.105];
         const INITIAL_ZOOM = 15;
-        
         const accentColor = '#c4ff9d';
         const iucnColors = { 'CR': '#d9534f', 'EN': '#f0ad4e', 'VU': '#f0ad4e', 'NT': '#5bc0de', 'LC': '#5cb85c', 'DD': '#777' };
 
         document.addEventListener('DOMContentLoaded', () => {
             initializeMap();
             loadFullData(); 
+            fetchIndexData();
             fetchLastMonitoring(); 
 
             // REALTIME LISTENER
@@ -298,11 +269,12 @@
             (payload) => {
                 showRealtimeNotification("New data received! Refreshing...");
                 loadFullData(); 
+                fetchIndexData(); 
                 fetchLastMonitoring();
             }).subscribe();
         });
 
-        // --- LOAD DATA ---
+        // 1. LOAD MAIN DATA
         async function loadFullData() {
             try {
                 const statusBadge = document.getElementById('loading-status-text');
@@ -316,23 +288,13 @@
                 let more = true;
 
                 while(more) {
-                    const { data, error } = await dbClient
-                        .from('biodiversity_dashboard')
-                        .select('*')
-                        .range(from, from + step - 1);
-
+                    const { data, error } = await dbClient.from('biodiversity_dashboard').select('*').range(from, from + step - 1);
                     if (error) throw error;
-                    if (data.length > 0) {
-                        allRows = allRows.concat(data);
-                        from += step;
-                        if(statusBadge) statusBadge.innerText = `Loaded ${allRows.length} rows...`;
-                    }
+                    if (data.length > 0) { allRows = allRows.concat(data); from += step; if(statusBadge) statusBadge.innerText = `Loaded ${allRows.length} rows...`; }
                     if (data.length < step) more = false; 
                 }
 
                 biodiversityData = allRows;
-                console.log(`✅ TOTAL DATA: ${biodiversityData.length}`);
-
                 updateHeaderStats();
                 populateDropdowns();
                 
@@ -340,16 +302,18 @@
                 setTimeout(() => { if(badge) badge.style.opacity = '0'; }, 2000);
                 
                 isDataReady = true;
-                if(selectedLayer) { 
-                    const id = selectedLayer.feature.properties.Name || selectedLayer.feature.properties.Sungai;
-                    selectLocation(selectedLayer, id, selectedLayerType);
-                }
+                if(selectedLayer) { selectLocation(selectedLayer, getFeatureID(selectedLayer), selectedLayerType); }
 
-            } catch (err) {
-                console.error("LOAD ERROR:", err);
-                const statusBadge = document.getElementById('loading-status-text');
-                if(statusBadge) { statusBadge.innerText = "Error loading data!"; statusBadge.style.color = "red"; }
-            }
+            } catch (err) { console.error("LOAD ERROR:", err); }
+        }
+
+        // 2. LOAD INDEX DATA (H')
+        async function fetchIndexData() {
+            try {
+                const { data, error } = await dbClient.from('view_shannon_index').select('*');
+                if (error) throw error;
+                indexData = data;
+            } catch (err) { console.error("INDEX ERROR:", err); }
         }
 
         function updateHeaderStats() {
@@ -357,75 +321,167 @@
                 const subset = biodiversityData.filter(d => getVal(d, 'Taxa') === taxaName);
                 const uniqueNames = new Set();
                 subset.forEach(d => {
-                    const s = getVal(d, 'Nama Ilmiah'); 
-                    const c = getVal(d, 'Jenis');       
+                    const s = getVal(d, 'Nama Ilmiah'); const c = getVal(d, 'Jenis');       
                     let key = null;
-                    if (s && s !== '-') key = s.toLowerCase().trim();
-                    else if (c && c !== '-') key = c.toLowerCase().trim();
+                    if (s && s !== '-') key = s.toLowerCase().trim(); else if (c && c !== '-') key = c.toLowerCase().trim();
                     if(key) uniqueNames.add(key);
                 });
                 return uniqueNames.size;
             };
-
             animateValue(document.getElementById('stat-mammal'), 0, countUnique('Mamalia'), 1500);
             animateValue(document.getElementById('stat-bird'), 0, countUnique('Burung'), 1500);
             animateValue(document.getElementById('stat-herp'), 0, countUnique('Herpetofauna'), 1500);
         }
 
-        // --- MAP INITIALIZATION & CONTROLS ---
+        // --- MAP INITIALIZATION ---
         function initializeMap() {
-            // 1. Define Base Maps
             const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
-            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' });
             const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' });
 
-            // 2. Init Map (Zoom pindah ke Bottom Left)
             map = L.map('map', { center: INITIAL_CENTER, zoom: INITIAL_ZOOM, layers: [esriSat], zoomControl: false });
-            L.control.zoom({ position: 'bottomleft' }).addTo(map); 
+            L.control.zoom({ position: 'bottomleft' }).addTo(map); // Zoom at bottom left
 
-            // 3. LAYER CONTROL (Bottom Right - Paling Atas)
             const baseMaps = { "Satellite": esriSat, "Street Map": osm, "Dark Mode": cartoDark };
             const overlayMaps = {}; 
             
-            // Layer Control di pojok kanan bawah
+            // LAYER CONTROL POSITIONED BOTTOM RIGHT
             layerControl = L.control.layers(baseMaps, overlayMaps, { position: 'bottomright' }).addTo(map);
 
-            // 4. CUSTOM CONTROLS (Bottom Right - Di bawah Layer)
+            // CUSTOM CONTROLS (Recenter & Reset) - ADDED AFTER LAYERS SO THEY APPEAR BELOW IT
             const CustomControls = L.Control.extend({
                 options: { position: 'bottomright' },
                 onAdd: function (map) {
                     const container = L.DomUtil.create('div', 'custom-map-controls');
-                    
-                    // Recenter Button
                     const recenterBtn = L.DomUtil.create('div', 'custom-control-btn', container);
-                    recenterBtn.innerHTML = '⌖'; 
-                    recenterBtn.title = "Recenter Map";
-                    recenterBtn.onclick = function() { map.setView(INITIAL_CENTER, INITIAL_ZOOM); };
-
-                    // Reset Button
+                    recenterBtn.innerHTML = '⌖'; recenterBtn.title = "Recenter"; recenterBtn.onclick = function() { map.setView(INITIAL_CENTER, INITIAL_ZOOM); };
                     const resetBtn = L.DomUtil.create('div', 'custom-control-btn', container);
-                    resetBtn.innerHTML = '↺'; 
-                    resetBtn.title = "Reset Selection";
-                    resetBtn.onclick = function() { resetSelection(); };
-
+                    resetBtn.innerHTML = '↺'; resetBtn.title = "Reset"; resetBtn.onclick = function() { resetSelection(); };
                     return container;
                 }
             });
             map.addControl(new CustomControls());
 
-            // 5. Fetch Layers
-            fetch('assets/rivers.geojson').then(r => r.json()).then(data => {
-                riverLayer = L.geoJSON(data, { style: { color: '#3498db', weight: 3 }, onEachFeature: (f, l) => setupFeature(f, l, 'river') }).addTo(map);
-                layerControl.addOverlay(riverLayer, "Rivers");
-            });
-            fetch('assets/grids.geojson').then(r => r.json()).then(data => {
-                gridLayer = L.geoJSON(data, { style: { color: accentColor, weight: 1, fillOpacity: 0.15 }, onEachFeature: (f, l) => setupFeature(f, l, 'grid') }).addTo(map);
+            // LEGEND (Dynamic)
+            const legend = L.control({position: 'bottomleft'});
+            legend.onAdd = function (map) {
+                const div = L.DomUtil.create('div', 'info legend');
+                div.id = 'dynamic-legend';
+                div.style.display = 'none';
+                return div;
+            };
+            legend.addTo(map);
+
+            // FETCH & RENDER LAYERS
+            Promise.all([
+                fetch('assets/rivers.geojson').then(r => r.json()),
+                fetch('assets/grids.geojson').then(r => r.json())
+            ]).then(([riversData, gridsData]) => {
+                
+                // 1. Standard Layers
+                riverLayer = L.geoJSON(riversData, { style: { color: '#3498db', weight: 3 }, onEachFeature: (f, l) => setupFeature(f, l, 'river') }).addTo(map);
+                gridLayer = L.geoJSON(gridsData, { style: { color: accentColor, weight: 1, fillOpacity: 0.15 }, onEachFeature: (f, l) => setupFeature(f, l, 'grid') }).addTo(map);
                 map.fitBounds(gridLayer.getBounds());
+
+                // 2. Biodiversity Index (Red Gradient)
+                indexLayer = L.layerGroup();
+                function getIndexColor(id) {
+                    const cleanId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const record = indexData.find(d => String(d.Plot).toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId);
+                    if (!record) return '#999';
+                    const h = record.shannon_index;
+                    // Light Pink -> Dark Red
+                    if (h > 2.5) return '#67000d'; // High - Dark
+                    if (h > 1.5) return '#ef3b2c'; // Med - Red
+                    return '#fcbba1';              // Low - Pink
+                }
+                const idxGrid = L.geoJSON(gridsData, { style: (f) => ({ color: getIndexColor(f.properties.Name), weight: 2, fillOpacity: 0.6, fillColor: getIndexColor(f.properties.Name) }), onEachFeature: (f,l) => bindClick(f,l,'grid') });
+                const idxRiver = L.geoJSON(riversData, { style: (f) => ({ color: getIndexColor(f.properties.Sungai), weight: 5, opacity: 0.8 }), onEachFeature: (f,l) => bindClick(f,l,'river') });
+                indexLayer.addLayer(idxGrid); indexLayer.addLayer(idxRiver);
+
+                // 3. IUCN Threat (Red Gradient)
+                iucnLayer = L.layerGroup();
+                function getIUCNColor(id) {
+                    const cleanId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const speciesInGrid = biodiversityData.filter(d => {
+                        const p = getVal(d, 'clean_plot') || getVal(d, 'Plot') || "";
+                        return String(p).toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId;
+                    });
+                    
+                    let maxScore = 0;
+                    speciesInGrid.forEach(s => {
+                        const status = getVal(s, 'Status IUCN');
+                        let score = 0;
+                        if(status.includes('CR')) score = 4;
+                        else if(status.includes('EN')) score = 3;
+                        else if(status.includes('VU')) score = 2;
+                        else if(status.includes('NT')) score = 1;
+                        if(score > maxScore) maxScore = score;
+                    });
+
+                    if (maxScore === 4) return '#4a0404'; // CR (Blackish Red)
+                    if (maxScore === 3) return '#b30000'; // EN (Dark Red)
+                    if (maxScore === 2) return '#fd8d3c'; // VU (Orange Red)
+                    if (maxScore === 1) return '#fec44f'; // NT (Yellow Orange)
+                    return 'transparent'; // Clean
+                }
+                const iucnGrid = L.geoJSON(gridsData, { style: (f) => ({ color: getIUCNColor(f.properties.Name), weight: 2, fillOpacity: 0.6, fillColor: getIUCNColor(f.properties.Name) }), onEachFeature: (f,l) => bindClick(f,l,'grid') });
+                const iucnRiver = L.geoJSON(riversData, { style: (f) => ({ color: getIUCNColor(f.properties.Sungai), weight: 5, opacity: 0.8 }), onEachFeature: (f,l) => bindClick(f,l,'river') });
+                iucnLayer.addLayer(iucnGrid); iucnLayer.addLayer(iucnRiver);
+
+                // Add Overlays to Layer Control
+                layerControl.addOverlay(riverLayer, "Rivers");
                 layerControl.addOverlay(gridLayer, "Survey Grids");
+                layerControl.addOverlay(indexLayer, "Biodiversity Index (H')");
+                layerControl.addOverlay(iucnLayer, "IUCN Threat Map");
+
+                // Dynamic Legend Logic
+                map.on('overlayadd', function (e) {
+                    const leg = document.getElementById('dynamic-legend');
+                    if (e.name === "Biodiversity Index (H')") {
+                        leg.style.display = 'block';
+                        leg.innerHTML = `<span class='legend-title'>Diversity Index (H')</span>
+                                         <i style='background:#67000d'></i> High (> 2.5)<br>
+                                         <i style='background:#ef3b2c'></i> Medium (1.5 - 2.5)<br>
+                                         <i style='background:#fcbba1'></i> Low (< 1.5)`;
+                        // Hide Standard
+                        if(map.hasLayer(gridLayer)) map.removeLayer(gridLayer);
+                        if(map.hasLayer(riverLayer)) map.removeLayer(riverLayer);
+                        if(map.hasLayer(iucnLayer)) map.removeLayer(iucnLayer);
+                    }
+                    else if (e.name === "IUCN Threat Map") {
+                        leg.style.display = 'block';
+                        leg.innerHTML = `<span class='legend-title'>Max Threat Level</span>
+                                         <i style='background:#4a0404'></i> Critical (CR)<br>
+                                         <i style='background:#b30000'></i> Endangered (EN)<br>
+                                         <i style='background:#fd8d3c'></i> Vulnerable (VU)<br>
+                                         <i style='background:#fec44f'></i> Near Threatened`;
+                        // Hide Standard
+                        if(map.hasLayer(gridLayer)) map.removeLayer(gridLayer);
+                        if(map.hasLayer(riverLayer)) map.removeLayer(riverLayer);
+                        if(map.hasLayer(indexLayer)) map.removeLayer(indexLayer);
+                    }
+                });
+
+                map.on('overlayremove', function (e) {
+                    const leg = document.getElementById('dynamic-legend');
+                    if (e.name === "Biodiversity Index (H')" || e.name === "IUCN Threat Map") {
+                        leg.style.display = 'none';
+                        if(!map.hasLayer(indexLayer) && !map.hasLayer(iucnLayer)) {
+                            if(!map.hasLayer(gridLayer)) map.addLayer(gridLayer);
+                            if(!map.hasLayer(riverLayer)) map.addLayer(riverLayer);
+                        }
+                    }
+                });
             });
-            
-            map.on('click', () => { if(isDataReady) resetSelection(); });
         }
+
+        function bindClick(f, l, type) {
+            const id = f.properties.Name || f.properties.Sungai;
+            l.on('click', (e) => { L.DomEvent.stopPropagation(e); selectLocation(l, id, type); });
+        }
+
+        function getFeatureID(layer) { return layer.feature.properties.Name || layer.feature.properties.Sungai; }
 
         function setupFeature(feature, layer, type) {
             const id = feature.properties.Name || feature.properties.Sungai;
@@ -466,8 +522,6 @@
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
             const targetClean = String(id).toLowerCase().replace(/[^a-z0-9]/g, ''); 
-            console.log(`🔍 KLIK PETA: "${id}" (Target Clean: "${targetClean}")`);
-
             currentGridRawData = biodiversityData.filter(d => {
                 const rawDbPlot = getVal(d, 'clean_plot') || getVal(d, 'Plot') || getVal(d, 'plot_id');
                 if (!rawDbPlot) return false;
@@ -475,40 +529,30 @@
                 return dbPlotClean.includes(targetClean) || targetClean.includes(dbPlotClean);
             });
 
-            console.log(`✅ HASIL FILTER: ${currentGridRawData.length} data ditemukan.`);
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
 
-        // --- HELPER FUNCTIONS ---
         function showRealtimeNotification(msg) {
             const toast = document.createElement('div');
             toast.innerText = msg;
             Object.assign(toast.style, { position: 'fixed', bottom: '20px', right: '20px', background: '#184D32', color: '#fff', padding: '15px 25px', borderRadius: '50px', zIndex: '9999', opacity: '0', transition: 'opacity 0.5s' });
             document.body.appendChild(toast);
-
-            // AUDIO CUE (Sound Effect)
-            const audio = new Audio('assets/notifications.wav'); 
-            audio.play().catch(e => console.log("Audio play failed (interaction needed):", e));
+            
+            const audio = new Audio('assets/notifications.wav');
+            audio.play().catch(e => console.log("Audio needed interaction"));
 
             setTimeout(() => toast.style.opacity = '1', 100);
             setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
         }
 
-        function getVal(item, key) {
-            return item[key] || item[key.toLowerCase()] || item[key.toUpperCase()] || null;
-        }
-
+        function getVal(item, key) { return item[key] || item[key.toLowerCase()] || item[key.toUpperCase()] || null; }
+        
         function animateValue(obj, start, end, duration) {
             if(!obj) return;
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                obj.innerHTML = Math.floor(progress * (end - start) + start);
-                if (progress < 1) window.requestAnimationFrame(step);
-            };
-            window.requestAnimationFrame(step);
+            let startT = null;
+            const step = (ts) => { if (!startT) startT = ts; const p = Math.min((ts - startT) / duration, 1); obj.innerHTML = Math.floor(p * (end - start) + start); if (p < 1) requestAnimationFrame(step); };
+            requestAnimationFrame(step);
         }
 
         async function fetchLastMonitoring() {
@@ -521,19 +565,15 @@
             } catch(e){}
         }
 
+        // --- FILTER & TABLE HELPERS ---
         function populateDropdowns() {
-            const mSelect = document.getElementById('filterMonth');
-            const ySelect = document.getElementById('filterYear');
+            const mSelect = document.getElementById('filterMonth'); const ySelect = document.getElementById('filterYear');
             const months = [...new Set(biodiversityData.map(d => getVal(d, 'Bulan')))].filter(x=>x).sort();
             const years = [...new Set(biodiversityData.map(d => getVal(d, 'Tahun')))].filter(x=>x).sort();
-
-            mSelect.innerHTML = '<option value="All">Survey Month</option>';
-            ySelect.innerHTML = '<option value="All">Survey Year</option>';
+            mSelect.innerHTML = '<option value="All">Survey Month</option>'; ySelect.innerHTML = '<option value="All">Survey Year</option>';
             months.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
             years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
-            
-            mSelect.addEventListener('change', applyFilters);
-            ySelect.addEventListener('change', applyFilters);
+            mSelect.addEventListener('change', applyFilters); ySelect.addEventListener('change', applyFilters);
             document.getElementById('searchSpecies').addEventListener('input', applyFilters);
         }
         
@@ -542,29 +582,20 @@
         const dropdownList = document.getElementById('custom-dropdown');
 
         searchInput.addEventListener('input', function() {
-            const val = this.value;
-            clearBtn.style.display = val.length > 0 ? 'block' : 'none';
-            dropdownList.innerHTML = '';
+            const val = this.value; clearBtn.style.display = val.length > 0 ? 'block' : 'none'; dropdownList.innerHTML = '';
             if (!val) { dropdownList.style.display = 'none'; applyFilters(); return; }
             const uniqueSpecies = [...new Set(biodiversityData.map(d => getVal(d, 'Jenis')))];
             const matches = uniqueSpecies.filter(s => s && s.toLowerCase().includes(val.toLowerCase()));
             if (matches.length > 0) {
                 dropdownList.style.display = 'block';
                 matches.forEach(species => {
-                    const item = document.createElement('div');
-                    item.className = 'autocomplete-item';
-                    item.innerText = species;
-                    item.addEventListener('click', function() {
-                        searchInput.value = species;
-                        dropdownList.style.display = 'none';
-                        applyFilters();
-                    });
+                    const item = document.createElement('div'); item.className = 'autocomplete-item'; item.innerText = species;
+                    item.addEventListener('click', function() { searchInput.value = species; dropdownList.style.display = 'none'; applyFilters(); });
                     dropdownList.appendChild(item);
                 });
             } else { dropdownList.style.display = 'none'; }
             applyFilters();
         });
-
         document.addEventListener('click', function(e) { if (!searchInput.contains(e.target) && !dropdownList.contains(e.target)) dropdownList.style.display = 'none'; });
         clearBtn.addEventListener('click', function() { searchInput.value = ''; this.style.display = 'none'; dropdownList.style.display = 'none'; applyFilters(); });
 
@@ -572,158 +603,72 @@
             const search = searchInput.value.toLowerCase();
             const month = document.getElementById('filterMonth').value;
             const year = document.getElementById('filterYear').value;
-            if(gridLayer) gridLayer.eachLayer(layer => { if(layer !== selectedLayer) gridLayer.resetStyle(layer); });
+            if(gridLayer && map.hasLayer(gridLayer)) gridLayer.eachLayer(layer => { if(layer !== selectedLayer) gridLayer.resetStyle(layer); });
             
             const filtered = biodiversityData.filter(d => {
-                const jenis = getVal(d, 'Jenis') || '';
-                const namaIlmiah = getVal(d, 'Nama Ilmiah') || '';
-                const matchSearch = (jenis + ' ' + namaIlmiah).toLowerCase().includes(search);
-                const matchMonth = month === 'All' || getVal(d, 'Bulan') === month;
-                const matchYear = year === 'All' || getVal(d, 'Tahun') == year;
-                return matchSearch && matchMonth && matchYear;
+                const jenis = getVal(d, 'Jenis') || ''; const namaIlmiah = getVal(d, 'Nama Ilmiah') || '';
+                return (jenis + ' ' + namaIlmiah).toLowerCase().includes(search) && (month === 'All' || getVal(d, 'Bulan') === month) && (year === 'All' || getVal(d, 'Tahun') == year);
             });
 
             if(search.length > 0 || month !== 'All' || year !== 'All') {
                 const activePlots = new Set(filtered.map(d => getVal(d, 'Plot')));
-                if(gridLayer) {
-                    gridLayer.eachLayer(layer => {
-                        if (activePlots.has(layer.feature.properties.Name)) layer.setStyle({ fillColor: '#c4ff9d', fillOpacity: 0.5, color: '#fff', weight: 2 });
-                    });
+                if(gridLayer && map.hasLayer(gridLayer)) {
+                    gridLayer.eachLayer(layer => { if (activePlots.has(layer.feature.properties.Name)) layer.setStyle({ fillColor: '#c4ff9d', fillOpacity: 0.5, color: '#fff', weight: 2 }); });
                 }
             }
         }
 
         function populateTableFilters(data) {
-             const taxaSel = document.getElementById('tableFilterTaxa');
-             const monthSel = document.getElementById('tableFilterMonth');
-             const yearSel = document.getElementById('tableFilterYear');
+             const taxaSel = document.getElementById('tableFilterTaxa'); const monthSel = document.getElementById('tableFilterMonth'); const yearSel = document.getElementById('tableFilterYear');
              taxaSel.innerHTML = '<option value="All">All</option>'; monthSel.innerHTML = '<option value="All">All</option>'; yearSel.innerHTML = '<option value="All">All</option>';
-             
-             const taxaList = [...new Set(data.map(d => getVal(d, 'Taxa')))].sort();
-             const monthList = [...new Set(data.map(d => getVal(d, 'Bulan')))].sort();
-             const yearList = [...new Set(data.map(d => getVal(d, 'Tahun')))].sort();
-             
-             taxaList.forEach(t => taxaSel.innerHTML += `<option value="${t}">${t}</option>`);
-             monthList.forEach(m => monthSel.innerHTML += `<option value="${m}">${m}</option>`);
-             yearList.forEach(y => yearSel.innerHTML += `<option value="${y}">${y}</option>`);
+             const taxaList = [...new Set(data.map(d => getVal(d, 'Taxa')))].sort(); const monthList = [...new Set(data.map(d => getVal(d, 'Bulan')))].sort(); const yearList = [...new Set(data.map(d => getVal(d, 'Tahun')))].sort();
+             taxaList.forEach(t => taxaSel.innerHTML += `<option value="${t}">${t}</option>`); monthList.forEach(m => monthSel.innerHTML += `<option value="${m}">${m}</option>`); yearList.forEach(y => yearSel.innerHTML += `<option value="${y}">${y}</option>`);
         }
 
         function applyTableFilters() {
-            const fTaxa = document.getElementById('tableFilterTaxa').value;
-            const fMonth = document.getElementById('tableFilterMonth').value;
-            const fYear = document.getElementById('tableFilterYear').value;
-            const filtered = currentGridRawData.filter(d => {
-                return (fTaxa === 'All' || getVal(d, 'Taxa') === fTaxa) && 
-                       (fMonth === 'All' || getVal(d, 'Bulan') === fMonth) && 
-                       (fYear === 'All' || getVal(d, 'Tahun') == fYear);
-            });
+            const fTaxa = document.getElementById('tableFilterTaxa').value; const fMonth = document.getElementById('tableFilterMonth').value; const fYear = document.getElementById('tableFilterYear').value;
+            const filtered = currentGridRawData.filter(d => (fTaxa === 'All' || getVal(d, 'Taxa') === fTaxa) && (fMonth === 'All' || getVal(d, 'Bulan') === fMonth) && (fYear === 'All' || getVal(d, 'Tahun') == fYear));
             renderTable(filtered);
         }
 
         function sortGridData(key) {
-            sortDirection *= -1;
-            currentGridRawData.sort((a, b) => {
-                let valA = String(getVal(a, key)).toLowerCase();
-                let valB = String(getVal(b, key)).toLowerCase();
-                if(valA < valB) return -1 * sortDirection;
-                if(valA > valB) return 1 * sortDirection;
-                return 0;
-            });
+            sortDirection *= -1; currentGridRawData.sort((a, b) => { let valA = String(getVal(a, key)).toLowerCase(); let valB = String(getVal(b, key)).toLowerCase(); return valA < valB ? -1 * sortDirection : (valA > valB ? 1 * sortDirection : 0); });
             applyTableFilters();
         }
 
         function renderTable(data) {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px;">No matching records.</td></tr>';
-                return;
-            }
+            const tbody = document.getElementById('table-body'); tbody.innerHTML = '';
+            if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px;">No matching records.</td></tr>'; return; }
             data.forEach(r => {
-                const iucn = getVal(r, 'Status IUCN') || 'NE';
-                let badgeColor = '#777';
-                Object.keys(iucnColors).forEach(k => { if(iucn.includes(k)) badgeColor = iucnColors[k]; });
-
-                const behavior = getVal(r, 'behavior') || getVal(r, 'Perilaku') || '-';
-                const encounter = getVal(r, 'encounter_type') || getVal(r, 'Tipe Jumpa') || '-';
-                const otherEnc = getVal(r, 'other_encounter_type'); 
+                const iucn = getVal(r, 'Status IUCN') || 'NE'; let badgeColor = '#777'; Object.keys(iucnColors).forEach(k => { if(iucn.includes(k)) badgeColor = iucnColors[k]; });
+                const behavior = getVal(r, 'behavior') || '-'; const encounter = getVal(r, 'encounter_type') || '-'; const otherEnc = getVal(r, 'other_encounter_type'); 
                 const displayEnc = (encounter === 'Lainnya' && otherEnc) ? `${encounter} (${otherEnc})` : encounter;
-
-                const row = `<tr>
-                    <td><strong class="clickable-species" onclick="showAnalytics('${getVal(r, 'Jenis')}')">${getVal(r, 'Jenis') || '-'}</strong><em>${getVal(r, 'Nama Ilmiah') || '-'}</em></td>
-                    <td>${getVal(r, 'Taxa') || '-'}</td>
-                    <td>${getVal(r, 'Jumlah') || 1}</td>
-                    <td>${behavior}</td>
-                    <td>${displayEnc}</td>
-                    <td><span class="status-badge" style="background:${badgeColor}">${iucn}</span></td>
-                </tr>`;
-                tbody.innerHTML += row;
+                tbody.innerHTML += `<tr><td><strong class="clickable-species" onclick="showAnalytics('${getVal(r, 'Jenis')}')">${getVal(r, 'Jenis') || '-'}</strong><em>${getVal(r, 'Nama Ilmiah') || '-'}</em></td><td>${getVal(r, 'Taxa') || '-'}</td><td>${getVal(r, 'Jumlah') || 1}</td><td>${behavior}</td><td>${displayEnc}</td><td><span class="status-badge" style="background:${badgeColor}">${iucn}</span></td></tr>`;
             });
         }
         
         function showAnalytics(name) { 
-            const modal = document.getElementById('analyticsModal');
-            const title = document.getElementById('analytics-title');
-            const speciesData = biodiversityData.filter(d => getVal(d, 'Jenis') === name);
-            if(speciesData.length === 0) return;
+            const modal = document.getElementById('analyticsModal'); const title = document.getElementById('analytics-title');
+            const speciesData = biodiversityData.filter(d => getVal(d, 'Jenis') === name); if(speciesData.length === 0) return;
             title.innerText = `Analysis: ${name}`;
-            
-            const timeMap = {};
-            speciesData.forEach(d => {
+            const timeMap = {}; speciesData.forEach(d => {
                 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                const bulan = getVal(d, 'Bulan');
-                const tahun = getVal(d, 'Tahun');
-                const jumlah = getVal(d, 'Jumlah');
-                const monthIndex = monthNames.indexOf(bulan);
-                const sortKey = `${tahun}-${String(monthIndex + 1).padStart(2, '0')}`;
-                const displayLabel = `${bulan} ${tahun}`;
-                if(!timeMap[sortKey]) timeMap[sortKey] = { label: displayLabel, count: 0 };
-                timeMap[sortKey].count += (jumlah || 1);
+                const sortKey = `${getVal(d, 'Tahun')}-${String(monthNames.indexOf(getVal(d, 'Bulan')) + 1).padStart(2, '0')}`;
+                if(!timeMap[sortKey]) timeMap[sortKey] = { label: `${getVal(d, 'Bulan')} ${getVal(d, 'Tahun')}`, count: 0 };
+                timeMap[sortKey].count += (getVal(d, 'Jumlah') || 1);
             });
             const sortedTimeKeys = Object.keys(timeMap).sort();
-            const timeLabels = sortedTimeKeys.map(k => timeMap[k].label);
-            const timeCounts = sortedTimeKeys.map(k => timeMap[k].count);
-
-            const locMap = {};
-            speciesData.forEach(d => {
-                const plot = getVal(d, 'Plot') || "Unknown";
-                const jumlah = getVal(d, 'Jumlah');
-                if(!locMap[plot]) locMap[plot] = 0;
-                locMap[plot] += (jumlah || 1);
-            });
+            const locMap = {}; speciesData.forEach(d => { const plot = getVal(d, 'Plot') || "Unknown"; locMap[plot] = (locMap[plot] || 0) + (getVal(d, 'Jumlah') || 1); });
             const sortedLocs = Object.entries(locMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
-            const locLabels = sortedLocs.map(i => i[0]);
-            const locCounts = sortedLocs.map(i => i[1]);
-
-            const ctxTrend = document.getElementById('trendChart').getContext('2d');
-            if(trendChartInstance) trendChartInstance.destroy();
-            trendChartInstance = new Chart(ctxTrend, {
-                type: 'line',
-                data: {
-                    labels: timeLabels,
-                    datasets: [{ label: 'Individuals Observed', data: timeCounts, borderColor: '#184D32', backgroundColor: 'rgba(24, 77, 50, 0.1)', borderWidth: 2, tension: 0.3, fill: true }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            const ctxLoc = document.getElementById('locationChart').getContext('2d');
-            if(locationChartInstance) locationChartInstance.destroy();
-            locationChartInstance = new Chart(ctxLoc, {
-                type: 'bar',
-                data: {
-                    labels: locLabels,
-                    datasets: [{ label: 'Total Count', data: locCounts, backgroundColor: '#87CEA2', borderRadius: 5 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
+            const ctxTrend = document.getElementById('trendChart').getContext('2d'); if(trendChartInstance) trendChartInstance.destroy();
+            trendChartInstance = new Chart(ctxTrend, { type: 'line', data: { labels: sortedTimeKeys.map(k => timeMap[k].label), datasets: [{ label: 'Individuals', data: sortedTimeKeys.map(k => timeMap[k].count), borderColor: '#184D32', backgroundColor: 'rgba(24, 77, 50, 0.1)', fill: true }] }, options: { responsive: true, maintainAspectRatio: false } });
+            const ctxLoc = document.getElementById('locationChart').getContext('2d'); if(locationChartInstance) locationChartInstance.destroy();
+            locationChartInstance = new Chart(ctxLoc, { type: 'bar', data: { labels: sortedLocs.map(i => i[0]), datasets: [{ label: 'Count', data: sortedLocs.map(i => i[1]), backgroundColor: '#87CEA2', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false } });
             modal.classList.add('active');
         }
 
         function closeAnalytics() { document.getElementById('analyticsModal').classList.remove('active'); }
-        document.getElementById('analyticsModal').addEventListener('click', (e) => {
-            if(e.target === document.getElementById('analyticsModal')) closeAnalytics();
-        });
+        document.getElementById('analyticsModal').addEventListener('click', (e) => { if(e.target === document.getElementById('analyticsModal')) closeAnalytics(); });
     </script>
 </body>
 </html>
