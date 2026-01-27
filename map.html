@@ -1,4 +1,225 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Dashboard - NingAlas</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        /* --- CSS UTAMA --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        :root {
+            --primary-green: #184D32; --secondary-text: #87CEA2; --monitoring-text: #4AA46F;
+            --bg-body: #f4f7f4; --dropdown-bg: #F1F8E9; --dropdown-hover: #C8E6C9; --accent-color: #c4ff9d;
+        }
+        @font-face { font-family: 'SF Pro Display'; src: url('assets/SF-Pro-Text-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+        @font-face { font-family: 'SF Pro Text'; src: url('assets/SF-Pro-Text-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+        
+        body, html { width: 100%; overflow-x: hidden; font-family: 'SF Pro Text', sans-serif; background: var(--bg-body); color: var(--primary-green); scroll-behavior: smooth; }
+        
+        /* NAVIGATION */
+        nav { position: fixed; top: 0; left: 0; right: 0; height: 50px; display: flex; justify-content: center; align-items: center; background: #87CEA2; z-index: 2200; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .nav-links { display: flex; gap: 40px; align-items: center; }
+        .nav-links a { color: #184D32; text-decoration: none; font-family: 'SF Pro Text', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s; }
+        .nav-links a:hover, .nav-links a.active { font-weight: 800; opacity: 1; }
+        .back-circle-btn { position: fixed; top: 10px; left: 20px; z-index: 2300; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.6); color: #184D32; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+        .back-circle-btn:hover { background: #fff; }
+
+        /* LOADING STATUS (Kecil di pojok, bukan fullscreen biar tidak blank) */
+        #loading-badge {
+            position: fixed; top: 60px; right: 20px; z-index: 4000;
+            background: #fff; padding: 10px 20px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 12px; font-weight: bold;
+            display: flex; align-items: center; gap: 10px;
+            transition: opacity 0.5s;
+        }
+        .spinner-mini {
+            width: 16px; height: 16px; border: 2px solid #f3f3f3; 
+            border-top: 2px solid var(--primary-green); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* DASHBOARD CONTENT (Langsung Visible) */
+        #dashboard-content { opacity: 1; } /* FIX: Jangan 0 agar tidak blank */
+
+        .stats-bar { position: fixed; top: 50px; left: 0; right: 0; height: 70px; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 2100; }
+        .stats-group { display: flex; gap: 40px; align-items: center; }
+        .stat-item { display: flex; align-items: center; gap: 12px; }
+        .icon-box { width: 36px; height: 36px; background: #87CEA2; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .icon-box img { width: 20px; height: 20px; object-fit: contain; filter: brightness(0) invert(1); }
+        .stat-text h4 { margin: 0; font-size: 10px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-text span { font-family: 'SF Pro Display', sans-serif; font-size: 22px; font-weight: 700; color: var(--primary-green); line-height: 1; }
+        .last-monitoring { text-align: right; }
+        .last-monitoring h4 { margin: 0; font-size: 10px; color: var(--monitoring-text); font-family: 'SF Pro Text Thin', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+        .last-monitoring span { font-size: 12px; font-weight: 400; color: var(--monitoring-text); }
+
+        .main-container { margin-top: 135px; width: 96%; max-width: 1600px; margin-left: auto; margin-right: auto; display: flex; flex-direction: column; padding-bottom: 20px; }
+        .map-section { position: relative; width: 100%; height: calc(100vh - 150px); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        #map { width: 100%; height: 100%; z-index: 1; }
+
+        .map-ui-overlay { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; gap: 15px; pointer-events: none; }
+        .filter-item { pointer-events: auto; height: 40px; background: #E8F5E9; border: none; border-radius: 8px; display: flex; align-items: center; padding: 0 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .search-wrapper { flex: 1; gap: 10px; position: relative; }
+        .search-icon { width: 16px; height: 16px; object-fit: contain; opacity: 0.6; }
+        #searchSpecies { width: 100%; border: none; background: transparent; outline: none; font-family: 'SF Pro Text', sans-serif; font-size: 13px; color: var(--primary-green); font-weight: 500; }
+        #searchSpecies::placeholder { color: var(--secondary-text); font-style: italic; }
+        .clear-btn { background: none; border: none; color: #888; font-size: 18px; cursor: pointer; display: none; padding: 0; line-height: 1; }
+        .clear-btn:hover { color: #d32f2f; }
+        .autocomplete-items { position: absolute; top: 110%; left: 0; right: 0; background-color: var(--dropdown-bg); border: 1px solid var(--dropdown-hover); border-radius: 8px; max-height: 280px; overflow-y: auto; z-index: 2500; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .autocomplete-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.03); font-size: 13px; color: var(--primary-green); }
+        .autocomplete-item:hover { background-color: var(--dropdown-hover); }
+        .filter-dropdown { min-width: 120px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2387CEA2'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 30px; color: var(--secondary-text); font-family: 'SF Pro Text', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; outline: none; }
+        .filter-dropdown:focus { border: 1px solid var(--secondary-text); }
+
+        .detail-section { min-height: 80vh; background: #fff; margin-top: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; position: relative; border-top: 4px solid #C8E6C9; }
+        .detail-header { padding: 25px 40px 15px 40px; border-bottom: 1px solid #f0f0f0; }
+        .detail-header h3 { margin: 0; font-family: 'SF Pro Display', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary-green); }
+        .detail-header p { margin: 5px 0 0 0; font-size: 13px; color: var(--secondary-text); }
+        .table-filters { display: flex; gap: 20px; padding: 15px 40px 0 40px; }
+        .filter-chip-wrapper { background: #E8F5E9; padding: 5px 15px; border-radius: 8px; width: 30%; display: flex; flex-direction: column; }
+        .filter-chip-wrapper label { font-size: 10px; font-weight: 700; color: var(--primary-green); margin-bottom: 2px; }
+        .table-select { appearance: none; background: transparent; border: none; font-family: 'SF Pro Text', sans-serif; font-size: 13px; color: var(--secondary-text); width: 100%; cursor: pointer; outline: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2387CEA2'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0px center; background-size: 14px; }
+        .data-table-container { width: 100%; padding: 0 40px 40px 40px; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .data-table th { text-align: left; padding: 15px 0; border-bottom: 2px solid #f0f0f0; font-size: 11px; color: var(--primary-green); font-weight: 700; text-transform: uppercase; cursor: pointer; user-select: none; transition: color 0.2s; }
+        .data-table th:hover { color: #2E7D32; }
+        .data-table td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px; color: #333; }
+        .data-table td strong { font-weight: 700; color: var(--primary-green); display: block; }
+        .data-table td strong:hover { color: #2E7D32; text-decoration: underline; }
+        .clickable-species { cursor: pointer; }
+        .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; }
+        .empty-state { display: flex; justify-content: center; align-items: center; height: 50vh; width: 100%; }
+        .empty-text { font-family: 'SF Pro Display', sans-serif; font-weight: 700; font-size: 24px; color: var(--primary-green); letter-spacing: 1px; opacity: 0.6; }
+
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important; }
+        .leaflet-control-zoom a { background: #fff !important; color: var(--primary-green) !important; border-radius: 4px !important; margin-bottom: 5px; }
+        .leaflet-control-layers { border: none !important; border-radius: 8px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important; font-family: 'SF Pro Text', sans-serif !important; font-size: 11px !important; }
+        .grid-label { background: transparent; border: none; box-shadow: none; color: #fff; font-weight: 700; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        /* ANALYTICS MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px);
+            z-index: 3000; display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .analytics-card {
+            background: #fff; width: 90%; max-width: 900px; max-height: 90vh;
+            border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; overflow: hidden;
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-overlay.active .analytics-card { transform: scale(1); }
+        .analytics-header { padding: 20px 30px; background: #E8F5E9; border-bottom: 1px solid #C8E6C9; display: flex; justify-content: space-between; align-items: center; }
+        .analytics-body { padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; }
+        .chart-row { display: flex; gap: 30px; min-height: 300px; }
+        .chart-container { flex: 1; background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        
+        @media(max-width: 1000px) {
+            .main-container { margin-top: 150px; width: 100%; border-radius: 0; }
+            .map-section { border-radius: 0; }
+            .map-ui-overlay { flex-direction: column; align-items: stretch; gap: 10px; }
+            .stats-bar { height: auto; padding: 15px 20px; flex-direction: column; align-items: flex-start; gap: 10px; }
+            .table-filters { flex-direction: column; gap: 10px; }
+            .filter-chip-wrapper { width: 100%; }
+            .chart-row { flex-direction: column; }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-badge">
+        <div class="spinner-mini"></div>
+        <span id="loading-status-text">Connecting to database...</span>
+    </div>
+
+    <nav>
+        <a href="explore.html" class="back-circle-btn">&larr;</a>
+        <div class="nav-links">
+            <a href="index.html#home">HOME</a>
+            <a href="index.html#location">LOCATION</a>
+            <a href="explore.html" class="active">EXPLORE</a>
+            <a href="index.html#about">ABOUT</a>
+        </div>
+    </nav>
+
+    <div id="dashboard-content">
+        <div class="stats-bar">
+            <div class="stats-group">
+                <div class="stat-item"><div class="icon-box"><img src="assets/icon_mammals.png" alt="M" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Mammals</h4><span id="stat-mammal">0</span></div></div>
+                <div class="stat-item"><div class="icon-box"><img src="assets/icon_birds.png" alt="B" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Birds</h4><span id="stat-bird">0</span></div></div>
+                <div class="stat-item"><div class="icon-box"><img src="assets/icon_herp.png" alt="H" onerror="this.style.display='none'"></div><div class="stat-text"><h4>Herpetofauna</h4><span id="stat-herp">0</span></div></div>
+            </div>
+            <div class="last-monitoring"><h4>Last Monitoring Date</h4><span id="last-monitoring-date">Loading...</span></div>
+        </div>
+
+        <div class="main-container">
+            <div class="map-section">
+                <div id="map"></div>
+                <div class="map-ui-overlay">
+                    <div class="search-wrapper filter-item">
+                        <img src="assets/search.png" alt="Search" class="search-icon">
+                        <input type="text" id="searchSpecies" placeholder="Search species..." autocomplete="off">
+                        <button id="clearSearch" class="clear-btn">&times;</button>
+                        <div id="custom-dropdown" class="autocomplete-items"></div>
+                    </div>
+                    <select id="filterMonth" class="filter-dropdown filter-item"><option value="All">Survey Month</option></select>
+                    <select id="filterYear" class="filter-dropdown filter-item"><option value="All">Survey Year</option></select>
+                </div>
+            </div>
+
+            <div class="detail-section" id="detail-section">
+                <div class="empty-state" id="empty-state"><span class="empty-text">NO LOCATION SELECTED</span></div>
+                <div id="detail-content" style="display: none; height: 100%; flex-direction: column;">
+                    <div class="detail-header">
+                        <div><h3 id="grid-title">Location - Species Observations</h3><p>Detailed observations recorded in this survey location</p></div>
+                    </div>
+                    <div class="table-filters">
+                        <div class="filter-chip-wrapper"><label>Taxa</label><select id="tableFilterTaxa" class="table-select" onchange="applyTableFilters()"><option value="All">All</option></select></div>
+                        <div class="filter-chip-wrapper"><label>Month</label><select id="tableFilterMonth" class="table-select" onchange="applyTableFilters()"><option value="All">All</option></select></div>
+                        <div class="filter-chip-wrapper"><label>Year</label><select id="tableFilterYear" class="table-select" onchange="applyTableFilters()"><option value="All">All</option></select></div>
+                    </div>
+                    <div class="data-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%;" onclick="sortGridData('Jenis')">Species</th>
+                                    <th style="width: 15%;" onclick="sortGridData('Taxa')">Taxa</th>
+                                    <th style="width: 10%;" onclick="sortGridData('Jumlah')">Count</th>
+                                    <th style="width: 15%;">Behavior</th>
+                                    <th style="width: 15%;">Encounter</th>
+                                    <th style="width: 15%;" onclick="sortGridData('Status IUCN')">IUCN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="analyticsModal">
+        <div class="analytics-card">
+            <div class="analytics-header"><h2 id="analytics-title">Analysis</h2><button class="close-analytics" onclick="closeAnalytics()">&times;</button></div>
+            <div class="analytics-body">
+                <div class="chart-row">
+                    <div class="chart-container"><h4>Trend</h4><canvas id="trendChart"></canvas></div>
+                    <div class="chart-container"><h4>Top Locations</h4><canvas id="locationChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
         const { createClient } = supabase;
         const SUPABASE_URL = 'https://vkfkvwkktgezipxbwzmg.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZmt2d2trdGdlemlweGJ3em1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMjA5MDIsImV4cCI6MjA4MTc5NjkwMn0.H9n8_rLj5ZfxPHA1jBWdU2uuW9TpfjWzCckEU8X-zVk';
@@ -33,19 +254,20 @@
             }).subscribe();
         });
 
-        // --- FUNGSI DOWNLOAD BERTAHAP (SOLUSI MASALAHMU) ---
+        // --- FUNGSI DOWNLOAD DATA BERTAHAP (AGAR DATA >1000 MASUK SEMUA) ---
         async function loadFullData() {
             try {
-                // Tampilkan loading
-                const loadingText = document.getElementById('loading-text');
-                if(loadingText) loadingText.innerText = "Downloading large dataset...";
+                const statusBadge = document.getElementById('loading-status-text');
+                const badge = document.getElementById('loading-badge');
+                if(statusBadge) statusBadge.innerText = "Downloading data...";
+                if(badge) badge.style.opacity = '1';
 
                 let allRows = [];
                 let from = 0;
-                let step = 1000; // Supabase limit default
+                let step = 1000; 
                 let more = true;
 
-                // LOOPING: Ambil 1000, lalu 1000 lagi, sampai habis
+                // LOOPING DOWNLOAD
                 while(more) {
                     const { data, error } = await dbClient
                         .from('biodiversity_dashboard')
@@ -57,42 +279,43 @@
                     if (data.length > 0) {
                         allRows = allRows.concat(data);
                         from += step;
-                        // Update teks loading biar user tau progresnya
-                        if(loadingText) loadingText.innerText = `Fetched ${allRows.length} records...`;
+                        if(statusBadge) statusBadge.innerText = `Loaded ${allRows.length} rows...`;
                     }
 
-                    // Jika data yang didapat kurang dari 1000, berarti sudah penghabisan
                     if (data.length < step) {
-                        more = false;
+                        more = false; // Stop loop jika data habis
                     }
                 }
 
                 biodiversityData = allRows;
-                console.log(`✅ TOTAL DATA TER-DOWNLOAD: ${biodiversityData.length} baris.`); // Cek Console F12, harusnya 3500+
+                console.log(`✅ TOTAL DATA: ${biodiversityData.length}`);
 
                 populateDropdowns();
                 
-                // Hilangkan Loading Screen
-                document.getElementById('loading-overlay').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('loading-overlay').style.display = 'none';
-                    document.getElementById('dashboard-content').classList.add('ready');
-                    isDataReady = true;
-                    if(selectedLayer) { 
-                        // Refresh view jika sedang buka grid
-                        const id = selectedLayer.feature.properties.Name || selectedLayer.feature.properties.Sungai;
-                        selectLocation(selectedLayer, id, selectedLayerType);
-                    }
-                }, 500);
+                // Hide Badge
+                if(statusBadge) statusBadge.innerText = "Data Ready";
+                setTimeout(() => { if(badge) badge.style.opacity = '0'; }, 2000);
+                
+                isDataReady = true;
+                
+                // Refresh jika sedang buka grid
+                if(selectedLayer) { 
+                    const id = selectedLayer.feature.properties.Name || selectedLayer.feature.properties.Sungai;
+                    selectLocation(selectedLayer, id, selectedLayerType);
+                }
 
             } catch (err) {
                 console.error("LOAD ERROR:", err);
-                document.getElementById('loading-text').innerText = "Error loading data. Check console.";
-                document.getElementById('loading-text').style.color = "red";
+                const statusBadge = document.getElementById('loading-status-text');
+                if(statusBadge) {
+                    statusBadge.innerText = "Error loading data!";
+                    statusBadge.style.color = "red";
+                }
+                alert("Gagal memuat data dari database. Cek koneksi internet atau console.");
             }
         }
 
-        // --- FILTER LOKASI (YANG SUDAH DIPERBAIKI SEBELUMNYA) ---
+        // --- FILTER LOKASI (TAHAN BANTING) ---
         function selectLocation(layer, id, type) {
             if (selectedLayer && selectedLayer !== layer) resetLayerStyle(selectedLayer, selectedLayerType);
             selectedLayer = layer; selectedLayerType = type;
@@ -110,24 +333,26 @@
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
             const targetClean = String(id).toLowerCase().replace(/[^a-z0-9]/g, ''); 
-            console.log(`🔍 KLIK PETA: "${id}" (Mencari clean_plot: "${targetClean}")`);
+            console.log(`🔍 KLIK PETA: "${id}" (Target Clean: "${targetClean}")`);
 
-            // Filter data yang sudah lengkap (3500+ baris)
             currentGridRawData = biodiversityData.filter(d => {
-                // Prioritaskan kolom 'clean_plot' dari SQL View baru
-                // Fallback ke kolom lain jika view lama
-                const dbClean = getVal(d, 'clean_plot') || String(getVal(d, 'Plot')).toLowerCase().replace(/[^a-z0-9]/g, '');
+                // Gunakan kolom 'clean_plot' jika ada, atau bersihkan manual
+                const rawDbPlot = getVal(d, 'clean_plot') || getVal(d, 'Plot') || getVal(d, 'plot_id');
+                if (!rawDbPlot) return false;
+
+                const dbPlotClean = String(rawDbPlot).toLowerCase().replace(/[^a-z0-9]/g, '');
                 
-                return dbClean.includes(targetClean) || targetClean.includes(dbClean);
+                // Pencocokan Flexible
+                return dbPlotClean.includes(targetClean) || targetClean.includes(dbPlotClean);
             });
 
-            console.log(`✅ HASIL FILTER: ${currentGridRawData.length} data ditemukan untuk grid ini.`);
+            console.log(`✅ HASIL FILTER: ${currentGridRawData.length} data ditemukan.`);
 
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
 
-        // --- FUNGSI HELPER LAIN (COPY-PASTE STANDAR) ---
+        // --- HELPER FUNCTIONS ---
         function showRealtimeNotification(msg) {
             const toast = document.createElement('div');
             toast.innerText = msg;
@@ -335,7 +560,6 @@
                     <td>${getVal(r, 'Jumlah') || 1}</td>
                     <td>${behavior}</td>
                     <td>${displayEnc}</td>
-                    <td>${getVal(r, 'Bulan') || '-'}</td>
                     <td><span class="status-badge" style="background:${badgeColor}">${iucn}</span></td>
                 </tr>`;
                 tbody.innerHTML += row;
@@ -406,3 +630,5 @@
             if(e.target === document.getElementById('analyticsModal')) closeAnalytics();
         });
     </script>
+</body>
+</html>
