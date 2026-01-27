@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Map Dashboard - Kemuning Forest Living Atlas</title>
+    <title>Map Dashboard - NingAlas</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        /* --- CSS STYLE (STANDARD) --- */
+        /* --- CSS STYLE --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
         :root {
             --primary-green: #184D32; --secondary-text: #87CEA2; --monitoring-text: #4AA46F;
@@ -214,13 +214,10 @@
             fetchLastMonitoring(); 
 
             // --- REALTIME LISTENER YANG BENAR ---
-            // Kita mendengarkan tabel ASLI 'observations'
-            // Tapi yang kita reload adalah View 'biodiversity_dashboard'
+            // Dengarkan tabel ASLI 'observations' -> Reload VIEW 'biodiversity_dashboard'
             dbClient.channel('public:observations').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'observations' }, 
             (payload) => {
                 showRealtimeNotification("New data received! Refreshing...");
-                
-                // Panggil ulang data dari View (agar data baru yang masuk ke tabel Observations terbaca)
                 loadFullData(); 
                 fetchHeaderStats();
                 fetchLastMonitoring();
@@ -316,7 +313,7 @@
             else riverLayer.resetStyle(layer);
         }
 
-        // --- CORE FILTERING LOGIC (ROBUST) ---
+        // --- CORE FILTERING LOGIC (ROBUST & TAHAN BANTING) ---
         function selectLocation(layer, id, type) {
             if (selectedLayer && selectedLayer !== layer) resetLayerStyle(selectedLayer, selectedLayerType);
             selectedLayer = layer; selectedLayerType = type;
@@ -333,35 +330,39 @@
             document.getElementById('detail-content').style.display = 'flex';
             document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth' });
 
-            // 1. Bersihkan ID Peta (contoh: "J13" -> "j13")
-            const targetClean = String(id).trim().toLowerCase(); 
-            console.log(`🔍 KLIK PETA: "${id}" (Target Clean: "${targetClean}")`);
+            // 1. NORMALISASI ID PETA (Hapus spasi, huruf kecil)
+            const targetClean = String(id).toLowerCase().replace(/[^a-z0-9]/g, ''); 
+            console.log(`🔍 KLIK PETA: "${id}" (Dibersihkan jadi: "${targetClean}")`);
 
-            // 2. Filter Database (Mencari ID yang cocok)
+            // 2. FILTER DATA (Dengan normalisasi dua arah)
             currentGridRawData = biodiversityData.filter(d => {
-                // Ambil plot dari DB, coba segala kemungkinan nama kolom
-                const rawDbPlot = getVal(d, 'Plot') || getVal(d, 'plot_id') || getVal(d, 'plot');
+                // Ambil plot dari DB (coba nama kolom 'Plot', 'plot', 'clean_plot', 'plot_id')
+                // Jika kamu sudah run SQL terakhir, harusnya ada 'clean_plot'
+                const rawDbPlot = getVal(d, 'clean_plot') || getVal(d, 'Plot') || getVal(d, 'plot_id');
                 
                 if (!rawDbPlot) return false;
 
-                // Bersihkan ID Database (contoh: "Grid J13" -> "grid j13")
-                const dbPlotClean = String(rawDbPlot).trim().toLowerCase();
+                // Bersihkan ID Database juga
+                const dbPlotClean = String(rawDbPlot).toLowerCase().replace(/[^a-z0-9]/g, '');
                 
-                // Cek apakah "j13" ada di dalam "grid j13" ATAU sebaliknya (Exact match preferred)
-                // Kita pakai .includes() agar "Grid J13" bisa ditemukan oleh "J13"
-                const isMatch = dbPlotClean === targetClean || dbPlotClean.includes(targetClean);
+                // Pencocokan 'Loose' (Saling mengandung)
+                // Contoh: Peta="j13", DB="gridj13" -> Match!
+                const isMatch = dbPlotClean === targetClean || 
+                                dbPlotClean.includes(targetClean) || 
+                                targetClean.includes(dbPlotClean);
                 
                 return isMatch;
             });
 
             console.log(`✅ HASIL: ${currentGridRawData.length} data ditemukan.`);
-            
-            // DIAGNOSA (Cetak semua plot yang ada di memori browser untuk pengecekan)
+
+            // DIAGNOSA LOG (Cek Console F12 jika masih kosong)
             if(currentGridRawData.length === 0) {
-                console.warn("⚠️ PERINGATAN: Tidak ada data ditemukan. Berikut daftar 5 Plot ID pertama di database kamu:");
-                biodiversityData.slice(0, 5).forEach(d => console.log("DB Plot Sample:", getVal(d, 'Plot')));
+                console.warn("⚠️ PERINGATAN: Tidak ada data ditemukan untuk grid ini.");
+                console.log("Contoh 3 Plot yang ada di database:", biodiversityData.slice(0,3).map(d=>getVal(d, 'Plot')));
             }
 
+            // POPULATE DROPDOWNS (Pastikan ini dipanggil setelah data difilter)
             populateTableFilters(currentGridRawData);
             renderTable(currentGridRawData);
         }
@@ -376,17 +377,87 @@
         function populateDropdowns() {
             const mSelect = document.getElementById('filterMonth');
             const ySelect = document.getElementById('filterYear');
-            // ... (Dropdown logic same as before, simplified for brevity in this paste) ...
-            // Code assumes standard population.
+            
+            const months = [...new Set(biodiversityData.map(d => getVal(d, 'Bulan')))].filter(x=>x).sort();
+            const years = [...new Set(biodiversityData.map(d => getVal(d, 'Tahun')))].filter(x=>x).sort();
+
+            mSelect.innerHTML = '<option value="All">Survey Month</option>';
+            ySelect.innerHTML = '<option value="All">Survey Year</option>';
+            
+            months.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
+            years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
+            
+            mSelect.addEventListener('change', applyFilters);
+            ySelect.addEventListener('change', applyFilters);
+            document.getElementById('searchSpecies').addEventListener('input', applyFilters);
         }
         
-        // ... (Fungsi Helper lain seperti applyFilters, sortGridData, renderTable, Analytics sama seperti sebelumnya) ...
+        // --- HELPER LAINNYA ---
+        const searchInput = document.getElementById('searchSpecies');
+        const clearBtn = document.getElementById('clearSearch');
+        const dropdownList = document.getElementById('custom-dropdown');
+
+        searchInput.addEventListener('input', function() {
+            const val = this.value;
+            clearBtn.style.display = val.length > 0 ? 'block' : 'none';
+            dropdownList.innerHTML = '';
+            if (!val) { dropdownList.style.display = 'none'; applyFilters(); return; }
+            const uniqueSpecies = [...new Set(biodiversityData.map(d => getVal(d, 'Jenis')))];
+            const matches = uniqueSpecies.filter(s => s && s.toLowerCase().includes(val.toLowerCase()));
+            if (matches.length > 0) {
+                dropdownList.style.display = 'block';
+                matches.forEach(species => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerText = species;
+                    item.addEventListener('click', function() {
+                        searchInput.value = species;
+                        dropdownList.style.display = 'none';
+                        applyFilters();
+                    });
+                    dropdownList.appendChild(item);
+                });
+            } else { dropdownList.style.display = 'none'; }
+            applyFilters();
+        });
+
+        document.addEventListener('click', function(e) { if (!searchInput.contains(e.target) && !dropdownList.contains(e.target)) dropdownList.style.display = 'none'; });
+        clearBtn.addEventListener('click', function() { searchInput.value = ''; this.style.display = 'none'; dropdownList.style.display = 'none'; applyFilters(); });
+
+        function applyFilters() {
+             // Filter global Peta (bukan detail tabel)
+            const search = searchInput.value.toLowerCase();
+            const month = document.getElementById('filterMonth').value;
+            const year = document.getElementById('filterYear').value;
+            if(gridLayer) gridLayer.eachLayer(layer => { if(layer !== selectedLayer) gridLayer.resetStyle(layer); });
+            
+            const filtered = biodiversityData.filter(d => {
+                const jenis = getVal(d, 'Jenis') || '';
+                const namaIlmiah = getVal(d, 'Nama Ilmiah') || '';
+                const matchSearch = (jenis + ' ' + namaIlmiah).toLowerCase().includes(search);
+                const matchMonth = month === 'All' || getVal(d, 'Bulan') === month;
+                const matchYear = year === 'All' || getVal(d, 'Tahun') == year;
+                return matchSearch && matchMonth && matchYear;
+            });
+
+            if(search.length > 0 || month !== 'All' || year !== 'All') {
+                const activePlots = new Set(filtered.map(d => getVal(d, 'Plot')));
+                if(gridLayer) {
+                    gridLayer.eachLayer(layer => {
+                        if (activePlots.has(layer.feature.properties.Name)) layer.setStyle({ fillColor: '#c4ff9d', fillOpacity: 0.5, color: '#fff', weight: 2 });
+                    });
+                }
+            }
+        }
 
         function populateTableFilters(data) {
              const taxaSel = document.getElementById('tableFilterTaxa');
              const monthSel = document.getElementById('tableFilterMonth');
              const yearSel = document.getElementById('tableFilterYear');
-             taxaSel.innerHTML = '<option value="All">All</option>'; monthSel.innerHTML = '<option value="All">All</option>'; yearSel.innerHTML = '<option value="All">All</option>';
+             
+             taxaSel.innerHTML = '<option value="All">All</option>'; 
+             monthSel.innerHTML = '<option value="All">All</option>'; 
+             yearSel.innerHTML = '<option value="All">All</option>';
              
              const taxaList = [...new Set(data.map(d => getVal(d, 'Taxa')))].sort();
              const monthList = [...new Set(data.map(d => getVal(d, 'Bulan')))].sort();
